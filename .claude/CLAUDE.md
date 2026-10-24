@@ -31,18 +31,36 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   Ława analizuje tylko pary wskazane przez screener. Kryteria — patrz
   „Podjęte decyzje → Interwał i koszty”.
 - **Baza danych** — stan rund, decyzje, głosy każdego tradera i wynik transakcji
-  (zysk/strata) do analizy skuteczności. Rodzaj bazy do ustalenia. Do tego czasu
-  wynik zapisywany do pliku `trading_state.txt`.
+  (zysk/strata) do analizy skuteczności. **SQLite** (patrz „Platforma i baza danych”),
+  budowana razem z symulatorem. Do tego czasu wynik zapisywany do pliku `trading_state.txt`.
 - **Logika wyjścia z pozycji** — SL/TP na giełdzie czy w kodzie, zachowanie ławy przy
   otwartej pozycji, limit pozycji, stan przetrwający restart. Na razie odłożona.
 - **UI (po angielsku)** — m.in. definiowanie ról traderów i zakresu danych, jakie dostają.
 - Futures / short i ewentualnie akcje.
 
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
-- Rodzaj bazy danych.
 - Działanie screenera coinów (częstotliwość, liczba par, kryteria dodatkowe np. siła trendu).
 
 ## Podjęte decyzje
+
+### Platforma i baza danych
+- **Docelowo system działa na Raspberry Pi** (4 lub 5, 4 GB RAM wystarczy — ciężka praca
+  LLM odbywa się w chmurze). Wszystkie zależności muszą działać na ARM64 (aarch64);
+  nowe biblioteki sprawdzać pod tym kątem.
+- **Baza: SQLite** w trybie WAL (`PRAGMA journal_mode=WAL`) — zero dodatkowych usług,
+  obciążenie znikome (kilkadziesiąt–kilkaset wierszy na dobę), równoległy odczyt dla przyszłego UI.
+- Cały dostęp do bazy **tylko przez warstwę w `zapis/`** — reszta kodu nie zna silnika bazy.
+  Przejście na PostgreSQL rozważyć dopiero, gdy: kilka niezależnych procesów zapisuje
+  jednocześnie, baza ma być dostępna przez sieć albo danych będzie bardzo dużo.
+- Wymagania wdrożenia na Pi:
+  - baza i logi na **dysku SSD (USB)**, nie na karcie SD (zużycie, ryzyko uszkodzenia
+    przy utracie zasilania); najlepiej cały system uruchamiany z SSD,
+  - **codzienna kopia bazy** na inny nośnik / do chmury (bezpieczna kopia SQLite w trakcie działania),
+  - **synchronizacja czasu (NTP)** — Pi nie ma podtrzymywanego zegara, a odrzucanie
+    niezamkniętych świec opiera się na czasie,
+  - uruchamianie jako **usługa systemd** (autostart, restart po awarii),
+  - opcjonalnie UPS — zalecany przed handlem realnymi środkami.
+- Ścieżki (baza, logi) w konfiguracji, żeby na Pi wskazać katalog na SSD.
 
 ### Interwał i koszty (analiza: `analizy/atr_vs_koszty.py`, 2026-10-24)
 - **Bazowy interwał: 1h.** Pozycje trwające kilka godzin — nadal day trading.
