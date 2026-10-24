@@ -15,7 +15,7 @@ def _formatuj_opinie(stan: AktualnyStan) -> str:
     linie = []
     for opinia in stan["opinie"].values():
         poziomy = (
-            f" | SL {opinia['stop_loss']:.8g} | TP {opinia['take_profit']:.8g} | pozycja {opinia['wielkosc_pozycji_procent']:.0f}%"
+            f" | SL {opinia['stop_loss']:.8g} | TP {opinia['take_profit']:.8g} | skala pozycji {opinia['wielkosc_pozycji_procent']:.0f}%"
             if opinia["glos"] == "TAK" else ""
         )
         linie.append(f"- {opinia['nazwa']}: {opinia['glos']}{poziomy}\n  Uzasadnienie: {opinia['uzasadnienie']}")
@@ -64,7 +64,7 @@ def zbuduj_wezel_head_tradera(konfiguracja: KonfiguracjaHeadTradera) -> Callable
             HumanMessage(content=_prompt(stan, cena, atr, koszt)),
         ]
         try:
-            odpowiedz = llm.zapytaj_model(konfiguracja, DecyzjaHeadTradera, wiadomosci)
+            odpowiedz = llm.zapytaj_model(konfiguracja, DecyzjaHeadTradera, wiadomosci, kto="head_trader")
         except Exception as blad:
             print(f"Błąd Head Tradera: {blad}")
             return {"decyzja_head_tradera": {**mediana, "uwagi": [f"błąd wywołania modelu: {blad}"]}}

@@ -1,6 +1,6 @@
 """Zapis stanu rundy do pliku tekstowego — tymczasowo, docelowo baza danych."""
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -22,19 +22,36 @@ def _opinie(opinie: Dict[str, Dict[str, Any]]) -> List[str]:
         linie.append(f"[{id_}] {opinia['nazwa']} ({opinia['model']}): {opinia['glos']}")
         if opinia["glos"] == "TAK":
             linie.append(
-                f"  SL: {opinia['stop_loss']} | TP: {opinia['take_profit']} | pozycja: {opinia['wielkosc_pozycji_procent']}%"
+                f"  SL: {opinia['stop_loss']} | TP: {opinia['take_profit']} | skala pozycji: {opinia['wielkosc_pozycji_procent']}%"
             )
         linie.append(f"  Uzasadnienie: {opinia['uzasadnienie'] or '(brak)'}")
         linie.extend(f"  Uwaga: {uwaga}" for uwaga in opinia["uwagi"])
     return linie
 
 
-def zapisz_stan(stan: AktualnyStan, nazwa_pliku: Path = PLIK_STANU):
+def formatuj_zuzycie(zuzycie: List[Dict[str, Any]]) -> str:
+    if not zuzycie:
+        return "=== KOSZT LLM ===\n(brak wywołań)"
+    linie = ["=== KOSZT LLM ==="]
+    for wpis in zuzycie:
+        koszt = f"${wpis['koszt_usd']:.5f}" if wpis["koszt_usd"] is not None else "brak ceny w CENNIK_MODELI"
+        linie.append(
+            f"{wpis['kto']} ({wpis['model']}): wejście {wpis['tokeny_wejscie']} | wyjście {wpis['tokeny_wyjscie']} "
+            f"(w tym rozumowanie {wpis['tokeny_rozumowanie']}) | {koszt}"
+        )
+    suma = sum(wpis["koszt_usd"] or 0 for wpis in zuzycie)
+    linie.append(f"RAZEM: ${suma:.5f}")
+    return "\n".join(linie)
+
+
+def zapisz_stan(stan: AktualnyStan, zuzycie: Optional[List[Dict[str, Any]]] = None, nazwa_pliku: Path = PLIK_STANU):
     linie = [
         "=== STAN TRADINGU ===",
         f"symbol: {stan['symbol']}",
         f"interwal: {stan['interwal']}",
         f"budzet: {stan['budzet']}",
+        "",
+        formatuj_zuzycie(zuzycie or []),
         "",
         "=== DECYZJA KOŃCOWA ===",
         *_slownik(stan.get("decyzja_koncowa")),

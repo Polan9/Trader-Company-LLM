@@ -16,7 +16,11 @@ class OpiniaTradera(BaseModel):
         description="Cena take-profit powyżej ceny wejścia. Wymagana przy TAK, przy NIE null."
     )
     wielkosc_pozycji_procent: Optional[float] = Field(
-        description="Jaki % maksymalnej dozwolonej pozycji otworzyć (0–100). Przy NIE null."
+        description=(
+            "Skala pełnej pozycji w procentach (0–100), NIE procent budżetu. Pełną pozycję wylicza "
+            "Risk Manager z ryzyka i limitów: 100 = pełna pozycja (pełne przekonanie), "
+            "50 = połowa, 25 = ćwierć. Przy NIE null."
+        )
     )
 
 

@@ -23,7 +23,10 @@ def _prompt_systemowy(trader: KonfiguracjaTradera) -> str:
     Nie widzisz głosów innych — oceniasz wyłącznie z perspektywy swojej specjalizacji
     i tylko na podstawie danych, które dostałeś.
     Głosujesz TAK albo NIE. Jeśli nie masz przekonania lub brakuje ci danych — głosuj NIE.
-    Przy TAK podaj stop-loss, take-profit i jaki % maksymalnej pozycji otworzyć.
+    Przy TAK podaj stop-loss, take-profit i skalę pozycji (0–100).
+    Skala to NIE procent budżetu — wielkość pełnej pozycji wylicza Risk Manager,
+    a ty decydujesz, jaką jej część otworzyć: 100 = pełna (pełne przekonanie),
+    50 = połowa, 25 = ćwierć.
     """
 
 
@@ -68,7 +71,7 @@ def zbuduj_wezel_tradera(trader: KonfiguracjaTradera) -> Callable[[AktualnyStan]
         ]
 
         try:
-            odpowiedz = llm.zapytaj_model(trader, OpiniaTradera, wiadomosci)
+            odpowiedz = llm.zapytaj_model(trader, OpiniaTradera, wiadomosci, kto=trader.id)
         except Exception as blad:
             # Awaria jednego tradera nie zatrzymuje rundy — liczy się jako NIE
             print(f"Błąd tradera '{trader.id}': {blad}")

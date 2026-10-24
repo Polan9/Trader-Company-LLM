@@ -14,6 +14,7 @@ from konfiguracja.ustawienia import (
     POSLIZG_STRONA_PROCENT,
     PROWIZJA_STRONA_PROCENT,
     RYZYKO_NA_TRANSAKCJE_PROCENT,
+    TOLERANCJA_ZYSK_DO_RYZYKA,
 )
 
 
@@ -65,7 +66,7 @@ def sprawdz_sl_tp(
         return bledy
 
     stosunek = zysk_do_ryzyka_netto(cena, stop_loss, take_profit, koszt_procent)
-    if stosunek < MIN_ZYSK_DO_RYZYKA:
+    if stosunek < MIN_ZYSK_DO_RYZYKA - TOLERANCJA_ZYSK_DO_RYZYKA:
         bledy.append(
             f"zysk/ryzyko po kosztach {stosunek:.2f} < {MIN_ZYSK_DO_RYZYKA} "
             f"(min. TP dla tego SL: {minimalny_take_profit(cena, stop_loss, koszt_procent):.8g})"

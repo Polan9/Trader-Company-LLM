@@ -7,11 +7,12 @@ from konfiguracja.lawa import KonfiguracjaLawy, wczytaj_konfiguracje_lawy
 from konfiguracja.ustawienia import BUDZET_POCZATKOWY, INTERWAL, PLIK_ENV, SYMBOL
 from lawa.glosowanie import glosowanie, po_glosowaniu
 from lawa.head_trader import zbuduj_wezel_head_tradera
+from lawa.llm import pobierz_i_wyczysc_zuzycie
 from lawa.risk_manager import risk_manager
 from lawa.traderzy import zbuduj_wezel_tradera
 from stan import AktualnyStan
 from wskazniki.analiza_techniczna import oblicz_analize_techniczna
-from zapis.plik_stanu import zapisz_stan
+from zapis.plik_stanu import formatuj_zuzycie, zapisz_stan
 
 
 def zbuduj_graf(konfiguracja: KonfiguracjaLawy):
@@ -64,4 +65,6 @@ if __name__ == "__main__":
 
     aplikacja = zbuduj_graf(wczytaj_konfiguracje_lawy())
     wynik = aplikacja.invoke(stan_poczatkowy())
-    zapisz_stan(wynik)
+    zuzycie = pobierz_i_wyczysc_zuzycie()
+    print(formatuj_zuzycie(zuzycie))
+    zapisz_stan(wynik, zuzycie)

@@ -128,17 +128,20 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   | Prowizja | 0.10% / stronę | standardowa stawka Binance spot (ccxt: taker = maker = 0.001) | wysoka, ale stawka konta może być inna (BNB, VIP) |
   | Spread | mierzony na żywo | bid/ask z tickera w każdej rundzie | wysoka dla chwili pomiaru |
   | Poślizg | 0.01% / stronę | szacunek dla płynnych par i małych zleceń | **niska** |
-  | Koszt LLM | ~$0.25–0.5 / dzień | szacunek z cennika i długości promptów | **niska** |
+  | Koszt LLM | $0.0038 / rundę (4 traderzy, bez Head Tradera) | **pomiar** z `usage_metadata`, 1 runda 2026-10-24 | średnia — jedna próbka |
 - **Po żywym teście (testnet / realne zlecenia) skalibrować**: prowizję odczytać z konta
   (`fetch_trading_fee` z kluczem API), poślizg policzyć jako różnicę ceny zlecenia
-  i ceny wykonania, koszt LLM z `usage` w odpowiedziach API. Do tego czasu traktować
+  i ceny wykonania. Koszt LLM liczony automatycznie w każdej rundzie (`lawa/llm.py`,
+  ceny w `CENNIK_MODELI` — aktualizować ręcznie). Do tego czasu traktować
   wyniki jako przybliżenie.
 
 ### Limity Risk Managera (`konfiguracja/ustawienia.py`)
 - Ryzyko na transakcję 1% budżetu (strata przy SL **z kosztami**), maks. pozycja 25% budżetu,
   min. pozycja 10 USD, maks. dzienna strata 3%, maks. 5 transakcji dziennie.
-- SL w odległości 0.5–3 × ATR, zysk/ryzyko **po kosztach** ≥ 1.5 — te same reguły
-  (z wyliczonym minimalnym TP) trafiają do promptów.
+- SL w odległości 0.5–3 × ATR, zysk/ryzyko **po kosztach** ≥ 1.5 (tolerancja 0.01 na
+  zaokrąglenia cen przez LLM) — te same reguły (z wyliczonym minimalnym TP) trafiają do promptów.
+- Skala pozycji od tradera (0–100) to część pełnej pozycji wyliczonej przez Risk Managera,
+  nie procent budżetu.
 - Minimalna pozycja 10 USD (własny próg; Binance wymaga min. 5 USDT dla BTC/USDT).
 - Przy BTC na 1h limit 25% budżetu zwykle wiąże przed limitem ryzyka (faktyczne ryzyko
   ok. 0.2% budżetu) — świadomie ostrożnie na start.
@@ -161,9 +164,11 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 | Researcher | skrypt zbiera newsy, LLM ocenia (krok 3 flow) | nie | skrypt + `gpt-6-luna` | ~$0.05/dzień |
 | Execution | składa zlecenia przez API giełdy | nie | kod | 0 |
 
-- Szacunkowy koszt przy interwale 1h (24 rundy/dzień, jedna para): ok. $0.25–0.5 dziennie
-  (ława ~ułamek centa na rundę, Head Trader ~$0.02 za wywołanie). Koszt rośnie
-  liniowo z liczbą par wskazanych przez screener.
+- Zmierzony koszt (2026-10-24, 1 runda): ława 4 traderów **$0.0038 / rundę**; przy 1h
+  (24 rundy/dzień, jedna para) ok. **$0.09 dziennie, ~$2.7 miesięcznie** + Head Trader
+  (szacunek ~$0.01 za wywołanie, tylko przy TAK). Wcześniejszy szacunek ($0.25–0.5/dzień)
+  był 3–5× zawyżony. Koszt rośnie liniowo z liczbą par wskazanych przez screener.
+  Najdroższe na rundę: gpt-5-mini i gpt-4.1-mini; gpt-5-nano zużywa dużo tokenów rozumowania.
 - Uwaga: modele rozumujące (rodzina gpt-5/gpt-6) liczą tokeny rozumowania jako wyjście
   i mogą nie wspierać `temperature` — używać niskiego `reasoning_effort`, sprawdzić
   obsługiwane parametry przed użyciem. `gpt-4.1-mini` wspiera `temperature=0`.

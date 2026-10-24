@@ -25,6 +25,7 @@ MIN_WIELKOSC_POZYCJI_USD = 10.0  # minimalna wartość zlecenia na Binance
 MAKS_DZIENNA_STRATA_PROCENT = 3.0
 MAKS_TRANSAKCJI_DZIENNIE = 5
 MIN_ZYSK_DO_RYZYKA = 1.5
+TOLERANCJA_ZYSK_DO_RYZYKA = 0.01  # zaokrąglenia cen przez LLM — 1.495 przechodzi, 1.489 nie
 MIN_SL_ATR = 0.5  # odległość SL od ceny wejścia, w wielokrotnościach ATR
 MAKS_SL_ATR = 3.0
 
@@ -45,6 +46,17 @@ OKRES_ATR = 14
 OKRES_SREDNIEGO_WOLUMENU = 20
 OKRES_TRENDU_WOLUMENU = 5
 PROG_TRENDU_WOLUMENU = 5.0  # % zmiany na świecę (nachylenie prostej)
+
+# --- Cennik modeli OpenAI: USD za 1M tokenów (wejście, wejście z cache, wyjście) ---
+# Stan z developers.openai.com/api/docs/pricing na 2026-10-24 — aktualizować ręcznie.
+CENNIK_MODELI = {
+    "gpt-6.1-sol": (2.00, 0.10, 10.00),
+    "gpt-6-luna": (0.10, 0.01, 0.50),
+    "gpt-5.6-luna": (0.20, 0.02, 1.20),
+    "gpt-5-mini": (0.25, 0.025, 2.00),
+    "gpt-5-nano": (0.05, 0.005, 0.40),
+    "gpt-4.1-mini": (0.40, 0.10, 1.60),
+}
 
 # --- Statystyki (blok danych quanta) ---
 OKNO_KROTKIE = 24  # przy 1h: doba
