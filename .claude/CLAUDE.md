@@ -128,14 +128,29 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 - Walidacja wejścia na początku węzła; przy braku danych `raise RuntimeError` z opisem po polsku.
 - Jeden trader = jedna konfiguracja (nazwa, osobowość, prompt systemowy, model) —
   traderzy budowani z tej samej funkcji fabrykującej, nie kopiowany kod.
-- Wraz z rozrostem projektu kod dzielony na moduły (np. `dane/`, `wskazniki/`,
-  `sygnaly/`, `lawa/`, `wykonanie/`) — zaproponuj strukturę, gdy `main.py` stanie się za duży.
+- Funkcje używane między modułami są publiczne (bez `_`); `_` tylko dla pomocniczych wewnątrz modułu.
+- Klienci LLM tworzeni leniwie (przy pierwszym użyciu), żeby import modułu nie wymagał klucza API.
+
+## Struktura kodu
+```
+main.py                     # tylko składa graf LangGraph i uruchamia rundę
+stan.py                     # AktualnyStan (TypedDict) — wspólny stan grafu
+konfiguracja/ustawienia.py  # stałe: ścieżki, rynek, świece, okresy wskaźników, modele
+dane/gielda.py              # pobieranie z giełdy (ccxt) + formatery bloków: ticker, świece
+wskazniki/obliczenia.py     # czyste funkcje: ema, rma, rsi, macd, true_range, atr, ...
+wskazniki/analiza_techniczna.py  # węzeł analizy technicznej + formater bloku
+lawa/                       # traderzy, głosowanie, Head Trader, Risk Manager (obecnie szkic analityka)
+zapis/plik_stanu.py         # zapis rundy do pliku (tymczasowo, docelowo baza danych)
+```
+- Nowe obszary jako kolejne pakiety, np. `sygnaly/` (newsy), `screener/`, `wykonanie/` (zlecenia).
+- Każdy blok danych dla promptu ma funkcję `formatuj_<blok>` obok kodu, który te dane tworzy.
+- Uruchamianie zawsze z katalogu głównego (`python main.py`) — importy są absolutne od korzenia projektu.
 
 ## Prompty LLM
 - Po polsku, z jasno określonym formatem odpowiedzi.
 - Powtarzalność decyzji: `temperature=0` tam, gdzie model to wspiera; w modelach
   rozumujących niski `reasoning_effort` (patrz tabela ławy).
-- Dane formatowane funkcjami pomocniczymi (jak `_format_analiza_techniczna_do_promptu`),
+- Dane formatowane funkcjami pomocniczymi (jak `formatuj_analize_techniczna`),
   nie surowe struktury.
 
 ## Bezpieczeństwo i wykonywanie zleceń
