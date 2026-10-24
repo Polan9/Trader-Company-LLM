@@ -7,7 +7,7 @@ PLIK_STANU = KATALOG_PROJEKTU / "trading_state.txt"
 
 # --- Rynek ---
 SYMBOL = "BTC/USDT"
-INTERWAL = "15m"
+INTERWAL = "1h"  # na 5m/15m prowizje zjadają 50–90% ATR — patrz analizy/atr_vs_koszty.py
 BUDZET_POCZATKOWY = 1000.0
 
 # --- Świece ---

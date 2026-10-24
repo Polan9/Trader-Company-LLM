@@ -27,9 +27,9 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 6. **Zapis** — pełny stan rundy (dane, opinie, głosy, decyzja) zapisywany do logu/pliku.
 
 ## Cele na później (backlog)
-- **Screener coinów** — moduł wybierający, które coiny opłaca się danego dnia tradować
-  (np. zmienność/ATR% vs prowizje, płynność i wolumen, spread, siła trendu).
-  Ława analizuje tylko pary wskazane przez screener.
+- **Screener coinów** — moduł wybierający, które coiny opłaca się danego dnia tradować.
+  Ława analizuje tylko pary wskazane przez screener. Kryteria — patrz
+  „Podjęte decyzje → Interwał i koszty”.
 - **Baza danych** — stan rund, decyzje, głosy każdego tradera i wynik transakcji
   (zysk/strata) do analizy skuteczności. Rodzaj bazy do ustalenia. Do tego czasu
   wynik zapisywany do pliku `trading_state.txt`.
@@ -40,9 +40,34 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
 - Rodzaj bazy danych.
-- Kryteria i działanie screenera coinów.
+- Działanie screenera coinów (częstotliwość, liczba par, kryteria dodatkowe np. siła trendu).
 
 ## Podjęte decyzje
+
+### Interwał i koszty (analiza: `analizy/atr_vs_koszty.py`, 2026-10-24)
+- **Bazowy interwał: 1h.** Pozycje trwające kilka godzin — nadal day trading.
+- Koszt transakcji = 2 × prowizja (0.1% na stronę, 0.075% z BNB) + spread.
+  Opłacalność mierzymy stosunkiem **koszt / ATR** na danym interwale
+  (przy SL = 1×ATR i TP = 1.5×ATR bez kosztów wystarcza 40% skuteczności).
+- Wyniki (mediana z 30 najpłynniejszych par USDT, Binance spot):
+
+  | Interwał | ATR | koszt / ATR | wymagana skuteczność |
+  |---|---|---|---|
+  | 5m | 0.25% | 88% | 75% — odpada |
+  | 15m | 0.46% | 49% | 60% — tylko bardzo zmienne alty, na granicy |
+  | 1h | 0.95% | 23% | 49% — wybrany |
+  | 4h | 2.10% | 11% | 44% — to już swing trading |
+
+  BTC/ETH/BNB na 15m wymagają 65–79% skuteczności — nieopłacalne.
+- **Kryteria screenera (twarde, w kodzie):**
+  - `koszt / ATR` na bazowym interwale **< 20–25%** (wartość progu w konfiguracji),
+  - tylko aktywne pary spot `*/USDT`, wykluczone: stablecoiny i coiny zachowujące się jak
+    stablecoin (ATR% bliski zera), tokenizowane złoto/akcje/ETF-y (np. XAUT, `*B` typu SOXLB),
+  - minimalny wolumen 24h i maksymalny spread (wartości w konfiguracji).
+- Prowizje w BNB włączyć przed handlem realnymi środkami (~25% taniej).
+  Zlecenia limit nie obniżają prowizji na zwykłym koncie, ale omijają spread.
+- Wynik analizy jest warunkiem koniecznym, nie gwarancją zysku — ATR mówi o wielkości
+  ruchu, nie o trafności kierunku. Poślizg nie jest uwzględniony.
 
 ### Newsy (hybryda: skrypt + tani LLM)
 - **Skrypt zbiera**: RSS portali crypto (np. Cointelegraph, Decrypt, The Block),
@@ -103,8 +128,9 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 | Researcher | skrypt zbiera newsy, LLM ocenia (krok 3 flow) | nie | skrypt + `gpt-6-luna` | ~$0.05/dzień |
 | Execution | składa zlecenia przez API giełdy | nie | kod | 0 |
 
-- Szacunkowy koszt przy interwale 15m (96 rund/dzień): ok. $1–2 dziennie
-  (ława ~ułamek centa na rundę, Head Trader ~$0.02 za wywołanie).
+- Szacunkowy koszt przy interwale 1h (24 rundy/dzień, jedna para): ok. $0.25–0.5 dziennie
+  (ława ~ułamek centa na rundę, Head Trader ~$0.02 za wywołanie). Koszt rośnie
+  liniowo z liczbą par wskazanych przez screener.
 - Uwaga: modele rozumujące (rodzina gpt-5/gpt-6) liczą tokeny rozumowania jako wyjście
   i mogą nie wspierać `temperature` — używać niskiego `reasoning_effort`, sprawdzić
   obsługiwane parametry przed użyciem. `gpt-4.1-mini` wspiera `temperature=0`.
@@ -141,6 +167,7 @@ wskazniki/obliczenia.py     # czyste funkcje: ema, rma, rsi, macd, true_range, a
 wskazniki/analiza_techniczna.py  # węzeł analizy technicznej + formater bloku
 lawa/                       # traderzy, głosowanie, Head Trader, Risk Manager (obecnie szkic analityka)
 zapis/plik_stanu.py         # zapis rundy do pliku (tymczasowo, docelowo baza danych)
+analizy/                    # jednorazowe analizy (uruchamiane: python -m analizy.<nazwa>)
 ```
 - Nowe obszary jako kolejne pakiety, np. `sygnaly/` (newsy), `screener/`, `wykonanie/` (zlecenia).
 - Każdy blok danych dla promptu ma funkcję `formatuj_<blok>` obok kodu, który te dane tworzy.
