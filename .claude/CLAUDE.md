@@ -90,8 +90,11 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 
 ### Głosowanie
 - Tylko `TAK` / `NIE` — bez `CZEKAJ`, niepewność = `NIE`.
-- Głosuje 5 traderów (nieparzyście → brak remisów). Pozycja otwierana, gdy `TAK > NIE`
-  **i** Risk Manager nie zgłosi weta.
+- Docelowo głosuje 5 traderów (nieparzyście → brak remisów). Pozycja otwierana, gdy `TAK > NIE`
+  **i** Risk Manager nie zgłosi weta. Remis = `NIE`.
+- Do czasu modułu newsów Analityk newsów ma `aktywny: false` → głosuje 4 traderów,
+  więc do wejścia potrzeba min. 3 głosów TAK.
+- Awaria modelu tradera lub głos `TAK` łamiący reguły SL/TP → liczony jako `NIE` (z uwagą w opinii).
 - Traderzy działają równolegle (fan-out w LangGraph) i **nie widzą swoich głosów** — brak owczego pędu.
 
 ### SL / TP / wielkość pozycji (hybryda)
@@ -111,6 +114,36 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   Każdy blok danych ma własną funkcję formatującą, a prompt tradera składany jest
   z bloków wskazanych w jego konfiguracji. Dodanie/zmiana roli nie może wymagać
   zmiany kodu węzłów.
+- Role, osobowości, modele i zakres danych: **`konfiguracja/lawa.json`**.
+  Dostępne bloki (`lawa/bloki_danych.py`): `ticker`, `swiece`, `swiece_krotkie`, `wolumen`,
+  `rsi`, `macd`, `atr`, `sygnaly_heurystyczne`, `statystyki`, `newsy` (na razie pusty).
+  Nieznana nazwa bloku = błąd przy budowie grafu.
+
+### Koszty transakcji — ruchoma liczba
+- **Wszystkie rachunki SL/TP i wielkości pozycji są po kosztach**:
+  zysk netto = TP − cena − koszt, ryzyko netto = cena − SL + koszt, wymóg netto ≥ 1.5.
+- Koszt = 2 × (prowizja + poślizg) + spread. Obecne wartości to **założenia, nie pomiary**:
+  | Składnik | Wartość | Źródło | Pewność |
+  |---|---|---|---|
+  | Prowizja | 0.10% / stronę | standardowa stawka Binance spot (ccxt: taker = maker = 0.001) | wysoka, ale stawka konta może być inna (BNB, VIP) |
+  | Spread | mierzony na żywo | bid/ask z tickera w każdej rundzie | wysoka dla chwili pomiaru |
+  | Poślizg | 0.01% / stronę | szacunek dla płynnych par i małych zleceń | **niska** |
+  | Koszt LLM | ~$0.25–0.5 / dzień | szacunek z cennika i długości promptów | **niska** |
+- **Po żywym teście (testnet / realne zlecenia) skalibrować**: prowizję odczytać z konta
+  (`fetch_trading_fee` z kluczem API), poślizg policzyć jako różnicę ceny zlecenia
+  i ceny wykonania, koszt LLM z `usage` w odpowiedziach API. Do tego czasu traktować
+  wyniki jako przybliżenie.
+
+### Limity Risk Managera (`konfiguracja/ustawienia.py`)
+- Ryzyko na transakcję 1% budżetu (strata przy SL **z kosztami**), maks. pozycja 25% budżetu,
+  min. pozycja 10 USD, maks. dzienna strata 3%, maks. 5 transakcji dziennie.
+- SL w odległości 0.5–3 × ATR, zysk/ryzyko **po kosztach** ≥ 1.5 — te same reguły
+  (z wyliczonym minimalnym TP) trafiają do promptów.
+- Minimalna pozycja 10 USD (własny próg; Binance wymaga min. 5 USDT dla BTC/USDT).
+- Przy BTC na 1h limit 25% budżetu zwykle wiąże przed limitem ryzyka (faktyczne ryzyko
+  ok. 0.2% budżetu) — świadomie ostrożnie na start.
+- Liczniki dzienne (`dzienna_strata_procent`, `transakcje_dzisiaj`) są w stanie, ale do czasu
+  bazy danych zawsze startują od zera.
 
 ### Skład ławy (wzór: firma prop tradingowa)
 Modele trzymane w konfiguracji tradera (łatwa podmiana). Mieszanka rodzin modeli celowo —
@@ -165,7 +198,17 @@ konfiguracja/ustawienia.py  # stałe: ścieżki, rynek, świece, okresy wskaźni
 dane/gielda.py              # pobieranie z giełdy (ccxt) + formatery bloków: ticker, świece
 wskazniki/obliczenia.py     # czyste funkcje: ema, rma, rsi, macd, true_range, atr, ...
 wskazniki/analiza_techniczna.py  # węzeł analizy technicznej + formater bloku
-lawa/                       # traderzy, głosowanie, Head Trader, Risk Manager (obecnie szkic analityka)
+konfiguracja/lawa.json      # role traderów i Head Tradera (dane, docelowo edytowane z UI)
+konfiguracja/lawa.py        # wczytanie i walidacja lawa.json (pydantic)
+wskazniki/statystyki.py     # statystyki zwrotów (blok danych quanta)
+lawa/bloki_danych.py        # rejestr bloków danych → składanie promptu tradera
+lawa/traderzy.py            # fabryka węzłów-traderów z konfiguracji
+lawa/glosowanie.py          # liczenie głosów, mediana/zakres SL/TP, krawędź warunkowa
+lawa/head_trader.py         # wybór SL/TP z zakresu ławy, fallback na medianę
+lawa/risk_manager.py        # weto + wielkość pozycji
+lawa/sl_tp.py               # twarde reguły SL/TP i wyliczanie wielkości pozycji
+lawa/modele.py              # schematy odpowiedzi LLM (pydantic)
+lawa/llm.py                 # jedyne miejsce wywołań LLM (łatwe podmienienie w testach)
 zapis/plik_stanu.py         # zapis rundy do pliku (tymczasowo, docelowo baza danych)
 analizy/                    # jednorazowe analizy (uruchamiane: python -m analizy.<nazwa>)
 ```

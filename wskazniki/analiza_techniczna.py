@@ -16,6 +16,7 @@ from konfiguracja.ustawienia import (
 )
 from stan import AktualnyStan
 from wskazniki.obliczenia import atr, macd, nachylenie_procentowe, rsi
+from wskazniki.statystyki import oblicz_statystyki
 
 
 def oblicz_analize_techniczna(stan: AktualnyStan):
@@ -150,45 +151,65 @@ def oblicz_analize_techniczna(stan: AktualnyStan):
             "sygnaly_wejscia": sygnaly_wejscia or ["brak mocnych sygnałów wejścia"],
             "sygnaly_wyjscia": sygnaly_wyjscia or ["brak mocnych sygnałów wyjścia"],
         },
+        "statystyki": oblicz_statystyki(swiece),
     }
     return {"analiza_techniczna": analiza}
 
 
-def formatuj_analize_techniczna(analiza: Dict[str, Any]) -> str:
-    if not analiza:
-        return "(brak analizy technicznej)"
+def formatuj_wolumen(analiza: Dict[str, Any]) -> str:
     w = analiza["wolumen"]
-    r = analiza["rsi"]
-    m = analiza["macd"]
-    a = analiza["atr"]
-    mw = analiza["moment_wejscia_wyjscia"]
-    wejscia = ", ".join(mw["sygnaly_wejscia"])
-    wyjscia = ", ".join(mw["sygnaly_wyjscia"])
-    szybki, wolny, sygnal = m["parametry"]
     return f"""
-    --- ANALIZA TECHNICZNA (ostatnia zamknięta świeca: {analiza['czas_ostatniej_swiecy']}) ---
-    WOLUMEN:
+    WOLUMEN (ostatnia zamknięta świeca: {analiza['czas_ostatniej_swiecy']}):
     - Ostatnia świeca: {w['ostatnia_swieca']:.6g} | Poprzednia: {w['poprzednia_swieca']:.6g}
     - Średnia z {w['okres_sredniej']} poprzednich świec: {w['srednia_poprzednich']:.6g}
     - Zmiana vs poprzednia świeca: {w['zmiana_procent_vs_poprzednia']:.2f}%
     - Zmiana vs średnia: {w['zmiana_procent_vs_srednia']:.2f}%
     - Trend wolumenu (5 świec): {w['trend']} ({w['nachylenie_procent_na_swiece']:+.2f}% na świecę)
     - Interpretacja: {w['interpretacja']}
+    """
 
+
+def formatuj_rsi(analiza: Dict[str, Any]) -> str:
+    r = analiza["rsi"]
+    return f"""
     RSI ({r['okres']} okresów, Wilder):
     - Wartość: {r['wartosc']:.2f} (poprzednio: {r['poprzednia_wartosc']:.2f})
     - Strefa: {r['strefa']}
     - Interpretacja: {r['interpretacja']}
+    """
 
+
+def formatuj_macd(analiza: Dict[str, Any]) -> str:
+    m = analiza["macd"]
+    szybki, wolny, sygnal = m["parametry"]
+    return f"""
     MACD ({szybki}, {wolny}, {sygnal}):
     - Linia MACD: {m['linia_macd']:.6g} | Sygnał: {m['linia_sygnalu']:.6g} | Histogram: {m['histogram']:.6g}
     - Poprzedni histogram: {m['poprzedni_histogram']:.6g}
     - Interpretacja: {m['interpretacja']}
+    """
 
+
+def formatuj_atr(analiza: Dict[str, Any]) -> str:
+    a = analiza["atr"]
+    return f"""
     ATR ({a['okres']} okresów, Wilder) — średni zakres ruchu na świecę:
     - Wartość: {a['wartosc']:.6g} ({a['procent_ceny']:.3f}% ceny zamknięcia)
-
-    SYGNAŁY WEJŚCIA / WYJŚCIA (heurystyka):
-    - Wejście: {wejscia}
-    - Wyjście: {wyjscia}
     """
+
+
+def formatuj_sygnaly_heurystyczne(analiza: Dict[str, Any]) -> str:
+    mw = analiza["moment_wejscia_wyjscia"]
+    return f"""
+    SYGNAŁY WEJŚCIA / WYJŚCIA (prosta heurystyka z RSI/MACD/wolumenu):
+    - Wejście: {", ".join(mw["sygnaly_wejscia"])}
+    - Wyjście: {", ".join(mw["sygnaly_wyjscia"])}
+    """
+
+
+def formatuj_analize_techniczna(analiza: Dict[str, Any]) -> str:
+    """Pełna analiza — wszystkie bloki razem (np. do zapisu stanu)."""
+    if not analiza:
+        return "(brak analizy technicznej)"
+    bloki = [formatuj_wolumen, formatuj_rsi, formatuj_macd, formatuj_atr, formatuj_sygnaly_heurystyczne]
+    return "".join(blok(analiza) for blok in bloki)

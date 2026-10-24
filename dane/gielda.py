@@ -81,6 +81,11 @@ def formatuj_ticker(aktualne_dane: Dict[str, Any]) -> str:
     """
 
 
+def cena_wejscia(aktualne_dane: Dict[str, Any]) -> float:
+    """Cena, po której kupimy zleceniem rynkowym — ask, a gdy go brak, ostatnia cena."""
+    return float(aktualne_dane.get("ask") or aktualne_dane["last"])
+
+
 def formatuj_swiece(swiece: pd.DataFrame, interwal: str, liczba: int = SWIECE_W_PROMPCIE) -> str:
     return f"""
     --- HISTORIA ZAMKNIĘTYCH ŚWIEC (ostatnie {liczba} z interwału {interwal}, czas UTC) ---

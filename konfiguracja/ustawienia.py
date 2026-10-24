@@ -4,11 +4,29 @@ from pathlib import Path
 KATALOG_PROJEKTU = Path(__file__).resolve().parent.parent
 PLIK_ENV = KATALOG_PROJEKTU / ".env"
 PLIK_STANU = KATALOG_PROJEKTU / "trading_state.txt"
+PLIK_KONFIGURACJI_LAWY = KATALOG_PROJEKTU / "konfiguracja" / "lawa.json"
+
+# --- Tryb ---
+TRYB = "symulacja"  # symulacja | testnet | realny — zlecenia jeszcze nie są składane
 
 # --- Rynek ---
 SYMBOL = "BTC/USDT"
 INTERWAL = "1h"  # na 5m/15m prowizje zjadają 50–90% ATR — patrz analizy/atr_vs_koszty.py
 BUDZET_POCZATKOWY = 1000.0
+# Koszty transakcji to założenia — ruchoma liczba, do skalibrowania na podstawie
+# rzeczywistych transakcji (testnet / żywy test). Spread mierzony na żywo w każdej rundzie.
+PROWIZJA_STRONA_PROCENT = 0.10  # Binance spot, standardowa stawka taker bez zniżki BNB
+POSLIZG_STRONA_PROCENT = 0.01  # szacunek dla zleceń rynkowych na płynnych parach
+
+# --- Zarządzanie ryzykiem (twarde limity Risk Managera) ---
+RYZYKO_NA_TRANSAKCJE_PROCENT = 1.0  # % budżetu tracony przy trafieniu SL (z kosztami)
+MAKS_POZYCJA_PROCENT_BUDZETU = 25.0
+MIN_WIELKOSC_POZYCJI_USD = 10.0  # minimalna wartość zlecenia na Binance
+MAKS_DZIENNA_STRATA_PROCENT = 3.0
+MAKS_TRANSAKCJI_DZIENNIE = 5
+MIN_ZYSK_DO_RYZYKA = 1.5
+MIN_SL_ATR = 0.5  # odległość SL od ceny wejścia, w wielokrotnościach ATR
+MAKS_SL_ATR = 3.0
 
 # --- Świece ---
 # Wskaźniki wygładzane wykładniczo potrzebują "rozgrzewki" — im więcej świec,
@@ -16,6 +34,7 @@ BUDZET_POCZATKOWY = 1000.0
 LIMIT_SWIEC = 300
 MIN_SWIEC = 100
 SWIECE_W_PROMPCIE = 25
+SWIECE_KROTKIE_W_PROMPCIE = 8
 
 # --- Wskaźniki ---
 OKRES_RSI = 14
@@ -27,5 +46,9 @@ OKRES_SREDNIEGO_WOLUMENU = 20
 OKRES_TRENDU_WOLUMENU = 5
 PROG_TRENDU_WOLUMENU = 5.0  # % zmiany na świecę (nachylenie prostej)
 
-# --- LLM ---
-MODEL_ANALITYKA = "gpt-4o-mini"
+# --- Statystyki (blok danych quanta) ---
+OKNO_KROTKIE = 24  # przy 1h: doba
+OKNO_DLUGIE = 168  # przy 1h: tydzień
+OKNO_ZSCORE = 20
+OKNO_ZAKRESU = 50
+OKNO_AUTOKORELACJI = 100
