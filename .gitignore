@@ -1,0 +1,17 @@
+# Sekrety
+.env
+*.env
+
+# Środowisko i cache Pythona
+.venv/
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+
+# Dane z uruchomień (docelowo baza danych)
+trading_state.*
+
+# Lokalne ustawienia Claude
+.claude/settings.local.json
