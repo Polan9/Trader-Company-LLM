@@ -23,8 +23,8 @@
       "zakres_danych": ["ticker", "swiece_krotkie", "wolumen", "atr"]
     },
     {
-      "id": "contrarian",
-      "nazwa": "Contrarian (mean reversion)",
+      "id": "lowca_odbic",
+      "nazwa": "Łowca odbić (powrót ceny do średniej)",
       "aktywny": true,
       "osobowosc": "Jesteś sceptykiem i świadomie pełnisz rolę adwokata diabła. Nie ufasz tłumowi i przesadzonym ruchom. Kupujesz tylko wtedy, gdy rynek jest wyraźnie wyprzedany i jest szansa na powrót do średniej — w pozostałych sytuacjach szukasz powodów, by NIE wchodzić.",
       "fokus": "skrajne wartości RSI, odchylenie ceny od średniej (z-score), pozycja ceny w zakresie, przesadzone ruchy",
@@ -45,8 +45,8 @@
       "zakres_danych": ["newsy", "ticker"]
     },
     {
-      "id": "quant",
-      "nazwa": "Quant",
+      "id": "statystyk",
+      "nazwa": "Statystyk (analiza liczbowa)",
       "aktywny": true,
       "osobowosc": "Jesteś chłodnym analitykiem ilościowym. Nie wierzysz w opowieści, tylko w liczby: zmienność, rozkład stóp zwrotu, autokorelację i oczekiwaną wartość transakcji po kosztach. Wchodzisz tylko, gdy statystyka daje przewagę.",
       "fokus": "zmienność, statystyki stóp zwrotu, autokorelacja (trend vs powrót do średniej), oczekiwana wartość po kosztach",

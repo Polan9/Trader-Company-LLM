@@ -97,7 +97,7 @@ CENNIK_MODELI = {
     "gpt-4.1-mini": (0.40, 0.10, 1.60),
 }
 
-# --- Statystyki (blok danych quanta) ---
+# --- Statystyki (blok danych statystyka) ---
 OKNO_KROTKIE = 24  # przy 1h: doba
 OKNO_DLUGIE = 168  # przy 1h: tydzień
 OKNO_ZSCORE = 20

@@ -3,14 +3,20 @@
 Porównuje ławę z dwiema strategiami odniesienia (z tych samych rund):
 - „zawsze wchodź” — transakcja referencyjna w każdej rundzie (SL 1×ATR, minimalny TP po kosztach),
 - „heurystyka” — referencja tylko w rundach z sygnałem wejścia z RSI/MACD/wolumenu,
-oraz z kupieniem i trzymaniem (cena z pierwszej i ostatniej rundy)."""
+oraz z kupieniem i trzymaniem: BTC jako benchmark rynku i średnia „kup przy pierwszej rundzie
+na danej parze, trzymaj do teraz” (po kosztach wejścia i wyjścia)."""
 import sqlite3
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
 
+from dane.gielda import aktualne_ceny, pobierz_swiece_od
 from konfiguracja.ustawienia import PLIK_BAZY
+from lawa.sl_tp import koszt_transakcji_procent
 from zapis import baza
+
+PARA_BENCHMARKU = "BTC/USDT"
 
 MIN_TRANSAKCJI_DO_WNIOSKOW = 100  # przy ~0.25 R przewagi i odch. 1.25 R — ok. 2σ
 
@@ -31,6 +37,78 @@ def _statystyki_transakcji(wyniki_r: pd.Series) -> dict:
 def _maks_spadek_procent(kapital: pd.Series) -> float:
     szczyt = kapital.cummax()
     return float(((kapital - szczyt) / szczyt * 100).min()) if not kapital.empty else 0.0
+
+
+def kup_i_trzymaj_btc(rundy: pd.DataFrame) -> Optional[Dict[str, Any]]:
+    """Benchmark rynku: zamknięcie BTC w świecy pierwszej rundy → ostatnia zamknięta świeca BTC."""
+    if rundy.empty:
+        return None
+    od = pd.Timestamp(rundy["czas_swiecy"].min())
+    swiece = pobierz_swiece_od(PARA_BENCHMARKU, rundy["interwal"].iloc[0], od)
+    if swiece.empty:
+        return None
+    start, koniec = float(swiece["close"].iloc[0]), float(swiece["close"].iloc[-1])
+    return {"start": start, "koniec": koniec, "zmiana_procent": (koniec / start - 1) * 100,
+            "netto_procent": (koniec / start - 1) * 100 - koszt_transakcji_procent(0.0)}
+
+
+def kup_i_trzymaj_pary(rundy: pd.DataFrame) -> pd.DataFrame:
+    """Dla każdej analizowanej pary: kupno po cenie z pierwszej rundy na niej, wycena po aktualnej cenie,
+    wynik netto po koszcie wejścia i wyjścia z tej rundy."""
+    zwolane = rundy[(rundy["pominieta"] == 0) & rundy["cena_wejscia"].notna()]
+    if zwolane.empty:
+        return pd.DataFrame()
+    pierwsze = zwolane.sort_values("czas_swiecy").groupby("symbol", as_index=False).first()
+    ceny = aktualne_ceny(list(pierwsze["symbol"]))
+    pierwsze["cena_teraz"] = pierwsze["symbol"].map(ceny)
+    pierwsze = pierwsze.dropna(subset=["cena_teraz"])
+    pierwsze["zmiana_procent"] = (pierwsze["cena_teraz"] / pierwsze["cena_wejscia"] - 1) * 100
+    pierwsze["netto_procent"] = pierwsze["zmiana_procent"] - pierwsze["koszt_procent"]
+    return pierwsze[["symbol", "czas_swiecy", "cena_wejscia", "cena_teraz", "zmiana_procent", "netto_procent"]]
+
+
+def otwarte_oceny_na_zywo(polaczenie: sqlite3.Connection) -> pd.DataFrame:
+    """Nierozstrzygnięte transakcje hipotetyczne wycenione po aktualnej cenie (niezrealizowany wynik)."""
+    oceny = baza.tabela_jako_df(polaczenie, """
+        SELECT oc.id, oc.runda_id, oc.kto, oc.symbol, oc.czas_wejscia, oc.cena_wejscia,
+               oc.stop_loss, oc.take_profit, oc.koszt_procent, o.nazwa
+        FROM oceny oc
+        LEFT JOIN opinie o ON o.runda_id = oc.runda_id AND o.trader_id = oc.kto
+        WHERE oc.status = 'otwarta' ORDER BY oc.czas_wejscia, oc.id
+    """)
+    if oceny.empty:
+        return oceny
+    ceny = aktualne_ceny(sorted(oceny["symbol"].unique()))
+    oceny["cena_teraz"] = oceny["symbol"].map(ceny)
+    oceny["kto"] = oceny["nazwa"].fillna(oceny["kto"])
+    ryzyko = (oceny["cena_wejscia"] - oceny["stop_loss"]) / oceny["cena_wejscia"] * 100 + oceny["koszt_procent"]
+    oceny["wynik_procent"] = (oceny["cena_teraz"] / oceny["cena_wejscia"] - 1) * 100 - oceny["koszt_procent"]
+    oceny["wynik_r"] = oceny["wynik_procent"] / ryzyko
+    oceny["do_sl_procent"] = (oceny["cena_teraz"] / oceny["stop_loss"] - 1) * 100
+    oceny["do_tp_procent"] = (oceny["take_profit"] / oceny["cena_teraz"] - 1) * 100
+    oceny["godzin_otwarta"] = (
+        (pd.Timestamp.now(tz="UTC") - pd.to_datetime(oceny["czas_wejscia"], utc=True)).dt.total_seconds() / 3600
+    )
+    return oceny
+
+
+def formatuj_otwarte_oceny(oceny: pd.DataFrame) -> str:
+    if oceny.empty:
+        return "  brak otwartych ocen"
+    linie = [f"  {'para':<11} {'kto':<38} {'wejście':>11} {'teraz':>11} {'wynik':>8} {'R':>6} "
+             f"{'do SL':>7} {'do TP':>7} {'godz.':>5}"]
+    for w in oceny.itertuples(index=False):
+        if pd.isna(w.cena_teraz):
+            linie.append(f"  {w.symbol:<11} {w.kto:<38} brak aktualnej ceny")
+            continue
+        linie.append(
+            f"  {w.symbol:<11} {w.kto:<38} {w.cena_wejscia:>11.6g} {w.cena_teraz:>11.6g} {w.wynik_procent:>+7.2f}% "
+            f"{w.wynik_r:>+6.2f} {w.do_sl_procent:>6.2f}% {w.do_tp_procent:>6.2f}% {w.godzin_otwarta:>5.1f}"
+        )
+    referencje = oceny[oceny["kto"] == "referencja"]
+    linie.append(f"  Razem {len(oceny)} (referencje: {len(referencje)}, głosy TAK: {len(oceny) - len(referencje)}) | "
+                 f"średnio {oceny['wynik_r'].mean():+.2f} R niezrealizowane")
+    return "\n".join(linie)
 
 
 def _linia_statystyk(nazwa: str, s: dict) -> str:
@@ -120,9 +198,27 @@ def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
     linie.append(_linia_statystyk("Zawsze wchodź", _statystyki_transakcji(oceny_ref["wynik_r"])))
     heurystyka = oceny_ref[oceny_ref["ma_sygnal_heurystyczny"] == 1]
     linie.append(_linia_statystyk("Heurystyka RSI/MACD", _statystyki_transakcji(heurystyka["wynik_r"])))
-    ceny = zwolane["cena_wejscia"].dropna()
-    if len(ceny) >= 2:
-        linie.append(f"  Kup i trzymaj:          {(ceny.iloc[-1] / ceny.iloc[0] - 1) * 100:+.2f}% (cena pierwszej → ostatniej rundy)")
+    try:
+        btc = kup_i_trzymaj_btc(rundy)
+        pary = kup_i_trzymaj_pary(rundy)
+    except Exception as blad:  # raport ma działać także bez dostępu do giełdy
+        linie.append(f"  Kup i trzymaj:          brak danych z giełdy ({blad})")
+    else:
+        if btc:
+            linie.append(f"  Kup i trzymaj BTC:      {btc['zmiana_procent']:+.2f}% "
+                         f"({btc['start']:.2f} → {btc['koniec']:.2f}; netto po kosztach {btc['netto_procent']:+.2f}%)")
+        if not pary.empty:
+            linie.append(f"  Kup i trzymaj pary:     średnio {pary['netto_procent'].mean():+.2f}% netto "
+                         f"({len(pary)} par; kupno przy pierwszej rundzie na danej parze)")
+            for w in pary.sort_values("netto_procent", ascending=False).itertuples(index=False):
+                linie.append(f"    {w.symbol:<12} {w.cena_wejscia:.8g} → {w.cena_teraz:.8g}: "
+                             f"{w.zmiana_procent:+.2f}% (netto {w.netto_procent:+.2f}%)")
+
+    linie += ["", "OTWARTE OCENY — wycena na żywo (wynik netto po kosztach; R = wynik / ryzyko do SL)"]
+    try:
+        linie.append(formatuj_otwarte_oceny(otwarte_oceny_na_zywo(polaczenie)))
+    except Exception as blad:
+        linie.append(f"  brak danych z giełdy ({blad})")
 
     karta = karta_traderow(polaczenie)
     linie += ["", "KARTA TRADERÓW (TAK trafny = własna transakcja na plus; NIE trafny = referencja na minus)"]
@@ -133,7 +229,7 @@ def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
             def p(x, fmt="{:5.1f}%"):
                 return "  —  " if pd.isna(x) else fmt.format(x)
             linie.append(
-                f"  {w.trader:<30} głosy {w.glosy:<4} TAK {w.tak_procent:5.1f}% | rozstrzygnięte {w.rozstrzygniete:<4} "
+                f"  {w.trader:<38} głosy {w.glosy:<4} TAK {w.tak_procent:5.1f}% | rozstrzygnięte {w.rozstrzygniete:<4} "
                 f"trafność {p(w.trafnosc_procent)} (TAK {p(w.trafnosc_tak_procent)}, NIE {p(w.trafnosc_nie_procent)}) "
                 f"| śr. R z TAK {p(w.sredni_r_tak, '{:+.3f}')}"
             )

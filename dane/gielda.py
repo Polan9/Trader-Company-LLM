@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import ccxt
 import pandas as pd
@@ -31,6 +31,14 @@ def pobierz_swiece_od(symbol: str, interwal: str, od: pd.Timestamp, maks_swiec: 
     swiece = pd.DataFrame(surowe, columns=["timestamp", "open", "high", "low", "close", "volume"])
     swiece["timestamp"] = pd.to_datetime(swiece["timestamp"], unit="ms", utc=True)
     return swiece.drop_duplicates("timestamp").reset_index(drop=True)
+
+
+def aktualne_ceny(symbole: List[str]) -> Dict[str, float]:
+    """Ostatnie ceny (last) dla listy par — jedno zapytanie o tickery."""
+    if not symbole:
+        return {}
+    tickery = ccxt.binance({"enableRateLimit": True}).fetch_tickers(symbole)
+    return {symbol: float(t["last"]) for symbol, t in tickery.items() if t.get("last")}
 
 
 def pobierz_dane(stan: AktualnyStan):

@@ -142,7 +142,7 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 
 ### Dane dla ról
 - Każda rola dostaje **wyłącznie dane potrzebne do swojej specjalizacji** (np. scalper:
-  bid/ask, spread, ostatnie świece; analityk newsów: oceny newsów i sentyment; quant:
+  bid/ask, spread, ostatnie świece; analityk newsów: oceny newsów i sentyment; statystyk:
   statystyki i zmienność). Mniej szumu, bardziej niezależne głosy, krótsze i tańsze prompty.
 - **Projektować pod przyszłe UI**: rola tradera i lista jego źródeł danych to **konfiguracja**
   (dane, nie kod) — np. `zakres_danych: ["ticker", "swiece", "rsi", "macd", ...]`.
@@ -193,7 +193,8 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   i każdy głos TAK na własnych poziomach. Karta traderów: TAK trafny = własna transakcja
   na plus, NIE trafny = referencja na minus.
 - Raport porównuje ławę ze strategiami odniesienia: „zawsze wchodź”, „heurystyka RSI/MACD”,
-  „kup i trzymaj”. Poniżej ~100 zamkniętych transakcji wyniki traktować jako niemiarodajne.
+  „kup i trzymaj BTC” (benchmark rynku) i „kup i trzymaj pary” (per para od pierwszej rundy
+  na niej, po kosztach) — screener wybiera różne coiny, więc cen różnych par nie porównujemy. Poniżej ~100 zamkniętych transakcji wyniki traktować jako niemiarodajne.
 
 ### Skład ławy (wzór: firma prop tradingowa)
 Modele trzymane w konfiguracji tradera (łatwa podmiana). Mieszanka rodzin modeli celowo —
@@ -203,9 +204,9 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 |---|---|---|---|---|
 | Trend / momentum trader | pewny siebie, gra z trendem; MACD, średnie, wybicia | tak | `gpt-6-luna` | $0.10 / $0.50 |
 | Scalper / price action | szybki, krótki horyzont; bid/ask, wolumen ostatnich świec | tak | `gpt-5-nano` | $0.05 / $0.40 |
-| Contrarian (mean reversion) | sceptyk, adwokat diabła; RSI skrajne, przesadzone ruchy | tak | `gpt-4.1-mini` | $0.40 / $1.60 |
+| Łowca odbić (`lowca_odbic`, dawniej Contrarian) | sceptyk, adwokat diabła; gra na powrót ceny do średniej po przesadzonym ruchu; RSI skrajne | tak | `gpt-4.1-mini` | $0.40 / $1.60 |
 | Analityk newsów i sentymentu | czyta rynek przez wydarzenia; newsy, X, makro | tak | `gpt-5.6-luna` | $0.20 / $1.20 |
-| Quant | chłodny, liczby; zmienność, statystyka, oczekiwany zysk | tak | `gpt-5-mini` | $0.25 / $2.00 |
+| Statystyk (`statystyk`, dawniej Quant) | chłodny, liczby; zmienność, statystyka, oczekiwany zysk | tak | `gpt-5-mini` | $0.25 / $2.00 |
 | Head Trader (szef desku) | agreguje opinie, ustala SL/TP; wołany tylko gdy `TAK > NIE` | nie | `gpt-6.1-sol` | $2.00 / $10.00 |
 | Risk Manager | twarde limity w kodzie, **weto**; opcjonalny komentarz LLM | weto | kod (+ `gpt-6-luna`) | ~0 |
 | Researcher | skrypt zbiera newsy, LLM ocenia (krok 3 flow) | nie | skrypt + `gpt-6-luna` | ~$0.05/dzień |
@@ -255,7 +256,7 @@ wskazniki/obliczenia.py     # czyste funkcje: ema, rma, rsi, macd, true_range, a
 wskazniki/analiza_techniczna.py  # węzeł analizy technicznej + formater bloku
 konfiguracja/lawa.json      # role traderów i Head Tradera (dane, docelowo edytowane z UI)
 konfiguracja/lawa.py        # wczytanie i walidacja lawa.json (pydantic)
-wskazniki/statystyki.py     # statystyki zwrotów (blok danych quanta)
+wskazniki/statystyki.py     # statystyki zwrotów (blok danych statystyka)
 lawa/bloki_danych.py        # rejestr bloków danych → składanie promptu tradera
 lawa/traderzy.py            # fabryka węzłów-traderów z konfiguracji
 lawa/glosowanie.py          # liczenie głosów, mediana/zakres SL/TP, krawędź warunkowa

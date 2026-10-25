@@ -1,4 +1,4 @@
-"""Statystyki stóp zwrotu i położenia ceny — blok danych dla quanta."""
+"""Statystyki stóp zwrotu i położenia ceny — blok danych dla statystyka (trader `statystyk`)."""
 from typing import Any, Dict
 
 import numpy as np

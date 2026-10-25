@@ -120,6 +120,35 @@ Liczba, skuteczność %, średni R, suma R, profit factor (suma zysków / suma s
 ### `_maks_spadek_procent(kapital) -> float`
 Największy spadek kapitału od szczytu w %.
 
+### `PARA_BENCHMARKU = "BTC/USDT"`
+Para używana jako benchmark całego rynku.
+
+### `kup_i_trzymaj_btc(rundy) -> dict | None`
+**Co robi:** wynik kupienia BTC na starcie symulacji i trzymania do teraz.
+**Jak działa:** świece BTC od świecy pierwszej rundy; zamknięcie pierwszej → zamknięcie ostatniej
+zamkniętej świecy. Zwraca `start`, `koniec`, `zmiana_procent` i `netto_procent` (minus koszt
+wejścia i wyjścia przy zerowym spreadzie). Pobiera dane z giełdy.
+
+### `kup_i_trzymaj_pary(rundy) -> DataFrame`
+**Co robi:** dla każdej pary, którą analizowała ława — kupno po cenie z **pierwszej rundy na tej
+parze** i wycena po aktualnej cenie.
+**Jak działa:** pierwsza niepominięta runda per para, aktualne ceny jednym zapytaniem
+(`aktualne_ceny`), wynik netto = zmiana ceny − koszt transakcji z tej rundy.
+Kolumny: `symbol`, `czas_swiecy`, `cena_wejscia`, `cena_teraz`, `zmiana_procent`, `netto_procent`.
+Liczone osobno per para, bo screener wybiera różne coiny — porównanie cen różnych par nie ma sensu.
+
+### `otwarte_oceny_na_zywo(polaczenie) -> DataFrame`
+**Co robi:** nierozstrzygnięte transakcje hipotetyczne (referencje i głosy TAK) wycenione po
+**aktualnej** cenie — niezrealizowany wynik.
+**Jak działa:** otwarte oceny + nazwa tradera z opinii, aktualne ceny jednym zapytaniem;
+liczy wynik netto % i w R, odległość ceny do SL i do TP w %, ile godzin trwa.
+Uwaga: rozstrzyganie w symulatorze odbywa się na **zamkniętych** świecach co godzinę —
+cena chwilowo poniżej SL (ujemne „do SL”) zamknie ocenę dopiero w najbliższym cyklu.
+
+### `formatuj_otwarte_oceny(oceny) -> str`
+Tabela otwartych ocen do raportu (para, kto, wejście, cena teraz, wynik %, R, do SL, do TP,
+godziny) i podsumowanie: liczba referencji / głosów TAK, średni niezrealizowany R.
+
 ### `_linia_statystyk(nazwa, statystyki) -> str`
 Jedna linia raportu ze statystykami.
 
@@ -132,4 +161,7 @@ rozstrzygnięte. Kolumny: głosy, % TAK, rozstrzygnięte, trafność (ogółem /
 ### `zbuduj_raport(polaczenie) -> str`
 Pełny raport: okres i rundy, portfel (budżet, koszt LLM, wynik po LLM), transakcje ławy
 (skuteczność, R, profit factor, maks. spadek, czas, powody wyjść), strategie odniesienia
-(**zawsze wchodź**, **heurystyka RSI/MACD**, **kup i trzymaj**), karta traderów, ostrzeżenie o małej próbie.
+(**zawsze wchodź**, **heurystyka RSI/MACD**, **kup i trzymaj BTC** jako benchmark rynku
+i **kup i trzymaj pary** — średnia i lista per para), **otwarte oceny wycenione na żywo**,
+karta traderów, ostrzeżenie o małej próbie.
+Gdy giełda jest niedostępna, sekcja „kup i trzymaj” pokazuje komunikat, reszta raportu działa.

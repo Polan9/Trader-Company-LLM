@@ -11,6 +11,10 @@ dawałoby wartości zmieniające się w trakcie świecy.
 **Jak działa:** `fetch_ohlcv(since=...)` po 1000 świec (limit Binance) w pętli, aż do końca
 danych albo `maks_swiec`; odrzuca trwającą świecę i duplikaty. Czas w UTC.
 
+### `aktualne_ceny(symbole) -> dict`
+Ostatnie ceny (`last`) dla listy par jednym zapytaniem o tickery — używane przez raport
+(„kup i trzymaj” per para). Pusta lista → pusty słownik.
+
 ### `pobierz_dane(stan) -> dict` *(węzeł grafu)*
 **Co robi:** pobiera ticker i historię świec dla `stan["symbol"]` / `stan["interwal"]`.
 **Jak działa:**

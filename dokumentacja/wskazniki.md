@@ -67,7 +67,7 @@ Każdy przyjmuje słownik `analiza_techniczna` i zwraca tekst do promptu (liczby
 ### `formatuj_analize_techniczna(analiza) -> str`
 Wszystkie powyższe bloki razem — do zapisu stanu w pliku.
 
-## `wskazniki/statystyki.py` — blok quanta
+## `wskazniki/statystyki.py` — blok danych statystyka
 
 ### `oblicz_statystyki(swiece) -> dict`
 **Co robi:** statystyki stóp zwrotu i położenia ceny.

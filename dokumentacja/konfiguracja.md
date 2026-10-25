@@ -27,7 +27,7 @@ Same stałe, bez funkcji. Najważniejsze grupy:
 | Świece | `LIMIT_SWIEC`, `MIN_SWIEC`, `SWIECE_W_PROMPCIE`, `SWIECE_KROTKIE_W_PROMPCIE` | ile świec pobrać / pokazać |
 | Wskaźniki | `OKRES_RSI`, `MACD_*`, `OKRES_ATR`, `OKRES_SREDNIEGO_WOLUMENU`, `OKRES_TRENDU_WOLUMENU`, `PROG_TRENDU_WOLUMENU` | parametry wskaźników |
 | Cennik | `CENNIK_MODELI` | `model → (wejście, wejście z cache, wyjście)` USD/1M tokenów — aktualizować ręcznie |
-| Statystyki | `OKNO_KROTKIE`, `OKNO_DLUGIE`, `OKNO_ZSCORE`, `OKNO_ZAKRESU`, `OKNO_AUTOKORELACJI` | okna statystyk quanta |
+| Statystyki | `OKNO_KROTKIE`, `OKNO_DLUGIE`, `OKNO_ZSCORE`, `OKNO_ZAKRESU`, `OKNO_AUTOKORELACJI` | okna bloku danych statystyka |
 
 ## `konfiguracja/lawa.json` — role ławy
 
