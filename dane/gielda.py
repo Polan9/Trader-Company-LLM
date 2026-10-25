@@ -13,6 +13,26 @@ def _tylko_zamkniete_swiece(surowe_swiece: list, interwal: str, teraz_ms: int) -
     return [swieca for swieca in surowe_swiece if swieca[0] + dlugosc_ms <= teraz_ms]
 
 
+def pobierz_swiece_od(symbol: str, interwal: str, od: pd.Timestamp, maks_swiec: int = 5000) -> pd.DataFrame:
+    """Zamknięte świece od chwili `od` (włącznie) do teraz — ze stronicowaniem po 1000."""
+    gielda = ccxt.binance({"enableRateLimit": True})
+    dlugosc_ms = ccxt.Exchange.parse_timeframe(interwal) * 1000
+    od_ms = int(od.timestamp() * 1000)
+    surowe: list = []
+    while len(surowe) < maks_swiec:
+        paczka = gielda.fetch_ohlcv(symbol, interwal, since=od_ms, limit=1000)
+        if not paczka:
+            break
+        surowe.extend(paczka)
+        if len(paczka) < 1000:
+            break
+        od_ms = paczka[-1][0] + dlugosc_ms
+    surowe = _tylko_zamkniete_swiece(surowe, interwal, gielda.milliseconds())
+    swiece = pd.DataFrame(surowe, columns=["timestamp", "open", "high", "low", "close", "volume"])
+    swiece["timestamp"] = pd.to_datetime(swiece["timestamp"], unit="ms", utc=True)
+    return swiece.drop_duplicates("timestamp").reset_index(drop=True)
+
+
 def pobierz_dane(stan: AktualnyStan):
     try:
         gielda = ccxt.binance({"enableRateLimit": True})

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # --- Ścieżki ---
@@ -5,6 +6,11 @@ KATALOG_PROJEKTU = Path(__file__).resolve().parent.parent
 PLIK_ENV = KATALOG_PROJEKTU / ".env"
 PLIK_STANU = KATALOG_PROJEKTU / "trading_state.txt"
 PLIK_KONFIGURACJI_LAWY = KATALOG_PROJEKTU / "konfiguracja" / "lawa.json"
+# Baza i logi — na Raspberry Pi wskazać katalog na SSD zmienną środowiskową
+# TRADER_KATALOG_DANYCH (np. w pliku usługi systemd: Environment=...).
+KATALOG_DANYCH = Path(os.environ.get("TRADER_KATALOG_DANYCH", KATALOG_PROJEKTU / "dane_lokalne"))
+PLIK_BAZY = KATALOG_DANYCH / "trader.db"
+KATALOG_LOGOW = KATALOG_DANYCH / "logi"
 
 # --- Tryb ---
 TRYB = "symulacja"  # symulacja | testnet | realny — zlecenia jeszcze nie są składane
@@ -28,6 +34,15 @@ MIN_ZYSK_DO_RYZYKA = 1.5
 TOLERANCJA_ZYSK_DO_RYZYKA = 0.01  # zaokrąglenia cen przez LLM — 1.495 przechodzi, 1.489 nie
 MIN_SL_ATR = 0.5  # odległość SL od ceny wejścia, w wielokrotnościach ATR
 MAKS_SL_ATR = 3.0
+
+# --- Symulator ---
+OPOZNIENIE_PO_ZAMKNIECIU_S = 20  # odczekanie po zamknięciu świecy, aż giełda ją opublikuje
+PROBY_CYKLU = 3  # ile razy ponowić cykl po błędzie (sieć, API)
+PRZERWA_PO_BLEDZIE_S = 60
+# Logika wyjścia (minimalna): SL, TP albo zamknięcie po czasie — day trading, nie trzymamy dni.
+MAKS_CZAS_POZYCJI_SWIEC = 24  # przy 1h: doba
+INTERWAL_ROZSTRZYGANIA = "1m"  # gdy SL i TP w tej samej świecy — sprawdzamy świece 1m
+REFERENCJA_SL_ATR = 1.0  # transakcja referencyjna: SL = 1 × ATR, TP = minimalny po kosztach
 
 # --- Świece ---
 # Wskaźniki wygładzane wykładniczo potrzebują "rozgrzewki" — im więcej świec,

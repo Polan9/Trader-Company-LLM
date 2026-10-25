@@ -30,11 +30,10 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 - **Screener coinów** — moduł wybierający, które coiny opłaca się danego dnia tradować.
   Ława analizuje tylko pary wskazane przez screener. Kryteria — patrz
   „Podjęte decyzje → Interwał i koszty”.
-- **Baza danych** — stan rund, decyzje, głosy każdego tradera i wynik transakcji
-  (zysk/strata) do analizy skuteczności. **SQLite** (patrz „Platforma i baza danych”),
-  budowana razem z symulatorem. Do tego czasu wynik zapisywany do pliku `trading_state.txt`.
-- **Logika wyjścia z pozycji** — SL/TP na giełdzie czy w kodzie, zachowanie ławy przy
-  otwartej pozycji, limit pozycji, stan przetrwający restart. Na razie odłożona.
+- **Logika wyjścia z pozycji (pełna)** — na razie wersja minimalna w symulatorze
+  (SL / TP / zamknięcie po `MAKS_CZAS_POZYCJI_SWIEC`, maks. 1 pozycja na parę, ława nie
+  zbiera się przy otwartej pozycji). Do ustalenia: wcześniejsze wyjście decyzją ławy,
+  trailing stop, SL/TP jako zlecenia OCO na giełdzie (przy trybie testnet/realny).
 - **UI (po angielsku)** — m.in. definiowanie ról traderów i zakresu danych, jakie dostają.
 - Futures / short i ewentualnie akcje.
 
@@ -163,8 +162,19 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 - Minimalna pozycja 10 USD (własny próg; Binance wymaga min. 5 USDT dla BTC/USDT).
 - Przy BTC na 1h limit 25% budżetu zwykle wiąże przed limitem ryzyka (faktyczne ryzyko
   ok. 0.2% budżetu) — świadomie ostrożnie na start.
-- Liczniki dzienne (`dzienna_strata_procent`, `transakcje_dzisiaj`) są w stanie, ale do czasu
-  bazy danych zawsze startują od zera.
+- Liczniki dzienne (`dzienna_strata_procent`, `transakcje_dzisiaj`) liczone z bazy przez
+  symulator (doba UTC); w pojedynczej rundzie `main.py` startują od zera.
+
+### Symulator (`python -m symulacja`, raport: `python -m symulacja.raport`)
+- Cykl co godzinę po zamknięciu świecy: rozliczenie otwartych → (jeśli brak otwartej pozycji)
+  runda ławy → zapis w SQLite. Runda unikalna per świeca — restart nie dubluje rund ani kosztów LLM.
+- Wejście w świecy **po** decyzji, po cenie `ask`. Rozstrzyganie konserwatywne: luka pod SL →
+  wyjście po otwarciu; SL i TP w jednej świecy → świece 1m, remis → SL.
+- **Oceny (transakcje hipotetyczne)**: referencja w każdej rundzie (SL 1×ATR, minimalny TP)
+  i każdy głos TAK na własnych poziomach. Karta traderów: TAK trafny = własna transakcja
+  na plus, NIE trafny = referencja na minus.
+- Raport porównuje ławę ze strategiami odniesienia: „zawsze wchodź”, „heurystyka RSI/MACD”,
+  „kup i trzymaj”. Poniżej ~100 zamkniętych transakcji wyniki traktować jako niemiarodajne.
 
 ### Skład ławy (wzór: firma prop tradingowa)
 Modele trzymane w konfiguracji tradera (łatwa podmiana). Mieszanka rodzin modeli celowo —
@@ -232,9 +242,18 @@ lawa/risk_manager.py        # weto + wielkość pozycji
 lawa/sl_tp.py               # twarde reguły SL/TP i wyliczanie wielkości pozycji
 lawa/modele.py              # schematy odpowiedzi LLM (pydantic)
 lawa/llm.py                 # jedyne miejsce wywołań LLM (łatwe podmienienie w testach)
-zapis/plik_stanu.py         # zapis rundy do pliku (tymczasowo, docelowo baza danych)
+zapis/baza.py               # SQLite (WAL) — jedyne miejsce znające silnik bazy
+zapis/plik_stanu.py         # czytelny podgląd ostatniej rundy (trading_state.txt)
+symulacja/petla.py          # pętla symulatora: rozliczenie → runda → zapis
+symulacja/ocena.py          # rozstrzyganie SL/TP/czas na świecach, wynik netto w R
+symulacja/raport.py         # raport skuteczności i karta traderów
+symulacja/__main__.py       # python -m symulacja [--raz]
 analizy/                    # jednorazowe analizy (uruchamiane: python -m analizy.<nazwa>)
+dokumentacja/               # opis każdej funkcji: co robi i jak działa
 ```
+- **Dokumentacja (`dokumentacja/`) aktualizowana razem z kodem**: każda nowa lub zmieniona
+  funkcja/klasa = wpis w pliku dokumentacji jej pakietu (co robi, jak działa, co zwraca).
+  Zmiana kodu bez aktualizacji dokumentacji jest niekompletna.
 - Nowe obszary jako kolejne pakiety, np. `sygnaly/` (newsy), `screener/`, `wykonanie/` (zlecenia).
 - Każdy blok danych dla promptu ma funkcję `formatuj_<blok>` obok kodu, który te dane tworzy.
 - Uruchamianie zawsze z katalogu głównego (`python main.py`) — importy są absolutne od korzenia projektu.
@@ -267,6 +286,9 @@ analizy/                    # jednorazowe analizy (uruchamiane: python -m analiz
 ## Środowisko
 - Python 3.12, wirtualne środowisko `.venv` w katalogu głównym (tylko pakiety, bez kodu).
 - Kod w katalogu głównym, repozytorium git (`.gitignore`: `.env`, `.venv/`, `.idea/`, `trading_state.*`).
-- Uruchamianie: `.venv\Scripts\python.exe main.py`
+- Uruchamianie: `.venv\Scripts\python.exe main.py` (jedna runda),
+  `.venv\Scripts\python.exe -m symulacja` (symulator), `-m symulacja.raport` (raport).
+- Baza i logi w `dane_lokalne/` (ignorowane przez git); inny katalog przez zmienną
+  środowiskową `TRADER_KATALOG_DANYCH`.
 - Pakiety tylko do `.venv`: `.venv\Scripts\pip.exe install <pakiet>`
 - `.env` w katalogu głównym, ładowany jawną ścieżką (`KATALOG_PROJEKTU / ".env"`).

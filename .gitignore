@@ -12,6 +12,7 @@ __pycache__/
 
 # Dane z uruchomień (docelowo baza danych)
 trading_state.*
+dane_lokalne/
 analizy/*_wynik.csv
 
 # Lokalne ustawienia Claude

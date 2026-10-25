@@ -148,6 +148,7 @@ def oblicz_analize_techniczna(stan: AktualnyStan):
             "procent_ceny": atr_procent,
         },
         "moment_wejscia_wyjscia": {
+            "ma_sygnal_wejscia": bool(sygnaly_wejscia),  # strategia odniesienia w raporcie
             "sygnaly_wejscia": sygnaly_wejscia or ["brak mocnych sygnałów wejścia"],
             "sygnaly_wyjscia": sygnaly_wyjscia or ["brak mocnych sygnałów wyjścia"],
         },
