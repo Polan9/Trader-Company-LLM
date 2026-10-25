@@ -51,9 +51,9 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   BTC odpadł (koszt/ATR 59%), ETH/SOL/XRP ~33–35%.
 - Maks. `MAKS_OTWARTYCH_POZYCJI = 1` łącznie.
 - **Przeszukiwanie rynku (decyzja 2026-10-25):** gdy ława powie NIE, analizuje kolejną parę
-  z rankingu — do otwarcia pozycji albo `MAKS_PAR_NA_SWIECE = 6` par. Cel: przejrzeć więcej
+  z rankingu — do otwarcia pozycji albo `MAKS_PAR_NA_SWIECE = 4` par. Cel: przejrzeć więcej
   rynku, **nie** wymusić wejście — nigdy nie pytamy ponownie o tę samą parę (to byłoby
-  losowanie odpowiedzi LLM aż do TAK). Koszt LLM do ~6× wyższy (ok. $0.024 / świecę zamiast $0.004).
+  losowanie odpowiedzi LLM aż do TAK). Koszt LLM do ~4× wyższy (ok. $0.016 / świecę zamiast $0.004).
 - **Decyzja użytkownika (2026-10-25): bez limitu maksymalnego ATR** — coiny po nagłym wzroście
   zostają (okazja na wejście), a przy nagłym spadku ława i tak głosuje NIE. Ranking po
   najniższym koszt/ATR będzie więc często wybierał najbardziej zmienne pary (np. BMT, ATR ~10%/h).
@@ -215,7 +215,9 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
   (24 rundy/dzień, jedna para) ok. **$0.09 dziennie, ~$2.7 miesięcznie** + Head Trader
   (szacunek ~$0.01 za wywołanie, tylko przy TAK). Wcześniejszy szacunek ($0.25–0.5/dzień)
   był 3–5× zawyżony. Koszt rośnie liniowo z liczbą przeszukiwanych par: przy
-  `MAKS_PAR_NA_SWIECE = 6` i samych NIE do ok. $0.58 dziennie (~$17 miesięcznie).
+  `MAKS_PAR_NA_SWIECE = 4` i samych NIE do ok. $0.38 dziennie (~$11.5 miesięcznie).
+  Próg opłacalności przy ~$9–11.5 / mies. (R ≈ 0.5% budżetu na zmiennych altach, ~20 transakcji/mies.):
+  ok. 720 USD przy skuteczności 45%, 360 USD przy 50%, 240 USD przy 55%; przy ≤ 40% — nigdy.
   Najdroższe na rundę: gpt-5-mini i gpt-4.1-mini; gpt-5-nano zużywa dużo tokenów rozumowania.
 - Uwaga: modele rozumujące (rodzina gpt-5/gpt-6) liczą tokeny rozumowania jako wyjście
   i mogą nie wspierać `temperature` — używać niskiego `reasoning_effort`, sprawdzić

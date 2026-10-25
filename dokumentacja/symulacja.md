@@ -13,7 +13,7 @@ Co godzinę (`OPOZNIENIE_PO_ZAMKNIECIU_S` po zamknięciu świecy) jeden **cykl**
    z symbolem `BRAK`.
 5. **Przeszukiwanie rynku:** runda ławy dla pierwszej pary z rankingu; gdy ława powie NIE,
    kolejna para z rankingu (nigdy ta sama ponownie) — aż do otwarcia pozycji albo
-   `MAKS_PAR_NA_SWIECE` par (domyślnie 6). Każda para to osobna runda w bazie (z rankingiem
+   `MAKS_PAR_NA_SWIECE` par (domyślnie 4). Każda para to osobna runda w bazie (z rankingiem
    screenera, opiniami, zużyciem LLM, ocenami i — przy decyzji TAK — nową pozycją).
 
 **Wejście** w pozycję liczone od świecy **po** decyzji, po cenie `ask` z chwili decyzji.

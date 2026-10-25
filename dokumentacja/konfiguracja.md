@@ -18,7 +18,7 @@ Same stałe, bez funkcji. Najważniejsze grupy:
 | | `SCREENER_LICZBA_KANDYDATOW`, `SCREENER_MIN_WOLUMEN_USDT`, `SCREENER_MAKS_SPREAD_PROCENT`, `SCREENER_MAKS_KOSZT_DO_ATR`, `SCREENER_MIN_ATR_PROCENT`, `SCREENER_OKNO_ATR`, `SCREENER_SWIECE` | kryteria wyboru pary — opis w [screener.md](screener.md) |
 | | `WYKLUCZONE_AKTYWA` | ręczna lista stablecoinów i tokenizowanych akcji/złota |
 | | `MAKS_OTWARTYCH_POZYCJI` | limit otwartych pozycji łącznie na wszystkich parach (1) |
-| | `MAKS_PAR_NA_SWIECE` | ile par z rankingu ława może przeanalizować w jednej świecy, gdy poprzednie dostały NIE (6) |
+| | `MAKS_PAR_NA_SWIECE` | ile par z rankingu ława może przeanalizować w jednej świecy, gdy poprzednie dostały NIE (4) |
 | Symulator | `OPOZNIENIE_PO_ZAMKNIECIU_S` | ile sekund po zamknięciu świecy startuje runda |
 | | `PROBY_CYKLU`, `PRZERWA_PO_BLEDZIE_S` | ponawianie cyklu po błędzie |
 | | `MAKS_CZAS_POZYCJI_SWIEC` | zamknięcie pozycji po czasie (24 świece = doba przy 1h) |
