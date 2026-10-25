@@ -11,8 +11,10 @@ Co godzinę (`OPOZNIENIE_PO_ZAMKNIECIU_S` po zamknięciu świecy) jeden **cykl**
    **pominięta**, ława nie jest zwoływana.
 4. **Screener** wybiera parę (pomijając pary z otwartą pozycją). Brak pary → runda pominięta
    z symbolem `BRAK`.
-5. Runda ławy dla wybranej pary z budżetem i licznikami dziennymi z bazy; zapis rundy
-   (z rankingiem screenera), opinii, zużycia LLM, ocen i — przy decyzji TAK — nowej pozycji.
+5. **Przeszukiwanie rynku:** runda ławy dla pierwszej pary z rankingu; gdy ława powie NIE,
+   kolejna para z rankingu (nigdy ta sama ponownie) — aż do otwarcia pozycji albo
+   `MAKS_PAR_NA_SWIECE` par (domyślnie 6). Każda para to osobna runda w bazie (z rankingiem
+   screenera, opiniami, zużyciem LLM, ocenami i — przy decyzji TAK — nową pozycją).
 
 **Wejście** w pozycję liczone od świecy **po** decyzji, po cenie `ask` z chwili decyzji.
 **Oceny** to transakcje hipotetyczne: referencja (SL 1×ATR, minimalny TP) w każdej rundzie
@@ -84,9 +86,16 @@ opinie, zużycie LLM, ocenę referencyjną, oceny głosów TAK i — przy decyzj
 Zwraca id rundy.
 
 ### `wykonaj_cykl(polaczenie, graf, stan_poczatkowy, teraz=None) -> dict`
-Jeden cykl (opis na górze). Gdy giełda zwróci inną ostatnią świecę niż wynika z zegara
-(opóźnienie publikacji), zapisuje pod czasem z danych i pilnuje duplikatów.
-**Zwraca:** `{"status": "runda" | "pominieta" | "brak_pary" | "juz_byla", ...}`.
+Jeden cykl (opis na górze): rozliczenie, sprawdzenie duplikatu świecy i limitu pozycji,
+screener, potem `_runda_lawy` dla kolejnych par z rankingu, aż któraś otworzy pozycję.
+**Zwraca:** `{"status": "runda" | "pominieta" | "brak_pary" | "juz_byla", "rundy": [...], ...}`.
+
+### `_runda_lawy(polaczenie, graf, stan_poczatkowy, symbol, czas_swiecy, teraz, wynik_screenera) -> dict`
+**Co robi:** jedna runda ławy dla jednej pary.
+**Jak działa:** stan z budżetem i licznikami dziennymi z bazy → graf → zużycie LLM.
+Gdy giełda zwróci inną ostatnią świecę niż wynika z zegara (opóźnienie publikacji), zapisuje
+pod czasem z danych; jeśli runda dla tej pary i świecy już jest — nie zapisuje duplikatu.
+**Zwraca:** `{"status", "runda_id", "symbol", "otwarta_pozycja"}`.
 
 ### `uruchom(polaczenie, graf, stan_poczatkowy, raz=False)`
 Pętla główna: cykl z ponawianiem (`PROBY_CYKLU`, przerwa `PRZERWA_PO_BLEDZIE_S`), potem

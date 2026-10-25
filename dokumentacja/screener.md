@@ -53,6 +53,7 @@ Tekst do logu: wybrana para, liczba przechodzących/odrzuconych i czołówka ran
 
 ## Gdzie jest używany
 - `symulacja/petla.py` → `wykonaj_cykl`: przed rundą, z pominięciem par z otwartą pozycją.
+  Ława analizuje pary po kolei z rankingu (maks. `MAKS_PAR_NA_SWIECE`), aż któraś otworzy pozycję.
   Brak pary → runda zapisana jako pominięta (symbol `BRAK`). Ranking (czołówka + powody
   odrzuceń) zapisywany w `rundy.szczegoly["screener"]`.
 - `main.py`: przy pojedynczej rundzie.

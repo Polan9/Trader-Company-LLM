@@ -11,7 +11,7 @@ budżet początkowy + suma wyników zamkniętych pozycji (jedno źródło prawdy
 | Tabela | Zawartość |
 |---|---|
 | `portfel` | jeden wiersz: budżet początkowy i data utworzenia |
-| `rundy` | każda runda (także pominięta), jedna na świecę; para wybrana przez screener (`BRAK`, gdy żadna nie przeszła); cena, ATR, koszt, decyzja, koszt LLM, szczegóły JSON (z rankingiem screenera) |
+| `rundy` | każda runda (także pominięta), unikalna per (para, interwał, świeca) — w jednej świecy może być kilka par z przeszukiwania; para z rankingu screenera (`BRAK`, gdy żadna nie przeszła); cena, ATR, koszt, decyzja, koszt LLM, szczegóły JSON (z rankingiem screenera) |
 | `opinie` | głos każdego tradera w rundzie: uzasadnienie, SL/TP, skala, uwagi |
 | `oceny` | transakcje hipotetyczne (referencja + głosy TAK) i ich wynik — do karty traderów |
 | `pozycje` | wirtualne pozycje ławy: wejście, SL/TP, wielkość, ryzyko, wynik USD/%/R |
@@ -41,9 +41,12 @@ Budżet początkowy + suma `wynik_usd` zamkniętych pozycji.
 Dla doby UTC: `dzienna_strata_procent` (strata z pozycji zamkniętych dziś, w % aktualnego
 budżetu; zysk = 0) i `transakcje_dzisiaj` (pozycje otwarte dziś). Dane dla Risk Managera.
 
+### `runda_istnieje(polaczenie, symbol, interwal, czas_swiecy) -> bool`
+Czy runda dla tej pary i świecy jest już zapisana — ochrona przed duplikatem przy przeszukiwaniu kilku par.
+
 ### `runda_dla_swiecy_istnieje(polaczenie, interwal, czas_swiecy) -> bool`
-Czy dla tej świecy była już runda — **dla dowolnej pary**, bo screener wybiera jedną parę
-na świecę (ochrona przed duplikatem i podwójnym kosztem LLM po restarcie).
+Czy dla tej świecy była już jakakolwiek runda (dowolna para). Na początku cyklu: po restarcie
+w tej samej godzinie przeszukiwanie nie jest powtarzane (brak podwójnych kosztów LLM).
 
 ### `zapisz_runde(polaczenie, **pola) -> int`
 Wstawia rundę; uzupełnia wartości domyślne, konwertuje czas i pola JSON. Zwraca id.

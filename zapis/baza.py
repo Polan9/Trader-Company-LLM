@@ -161,6 +161,14 @@ def liczniki_dzienne(polaczenie: sqlite3.Connection, dzien: pd.Timestamp) -> Dic
 
 # --- Rundy ---
 
+def runda_istnieje(polaczenie: sqlite3.Connection, symbol: str, interwal: str, czas_swiecy: pd.Timestamp) -> bool:
+    """Czy dla tej pary i świecy runda jest już zapisana."""
+    return polaczenie.execute(
+        "SELECT 1 FROM rundy WHERE symbol = ? AND interwal = ? AND czas_swiecy = ?",
+        (symbol, interwal, _czas(czas_swiecy)),
+    ).fetchone() is not None
+
+
 def runda_dla_swiecy_istnieje(polaczenie: sqlite3.Connection, interwal: str, czas_swiecy: pd.Timestamp) -> bool:
     """Czy dla tej świecy była już runda (dowolna para — screener wybiera jedną parę na świecę)."""
     return polaczenie.execute(

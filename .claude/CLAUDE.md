@@ -49,7 +49,16 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   **nie wykluczać po końcówce nazwy** (`BNB`, `ARB` to zwykłe coiny).
 - Pierwszy pomiar (2026-10-25, niedziela): przeszło 5 z 30 par (WLD, ZEC, NEAR, ENA, SUI);
   BTC odpadł (koszt/ATR 59%), ETH/SOL/XRP ~33–35%.
-- Maks. `MAKS_OTWARTYCH_POZYCJI = 1` łącznie; jedna runda na świecę (dla dowolnej pary).
+- Maks. `MAKS_OTWARTYCH_POZYCJI = 1` łącznie.
+- **Przeszukiwanie rynku (decyzja 2026-10-25):** gdy ława powie NIE, analizuje kolejną parę
+  z rankingu — do otwarcia pozycji albo `MAKS_PAR_NA_SWIECE = 6` par. Cel: przejrzeć więcej
+  rynku, **nie** wymusić wejście — nigdy nie pytamy ponownie o tę samą parę (to byłoby
+  losowanie odpowiedzi LLM aż do TAK). Koszt LLM do ~6× wyższy (ok. $0.024 / świecę zamiast $0.004).
+- **Decyzja użytkownika (2026-10-25): bez limitu maksymalnego ATR** — coiny po nagłym wzroście
+  zostają (okazja na wejście), a przy nagłym spadku ława i tak głosuje NIE. Ranking po
+  najniższym koszt/ATR będzie więc często wybierał najbardziej zmienne pary (np. BMT, ATR ~10%/h).
+  Do obserwacji w raporcie: wyniki na takich parach i realny poślizg (założenie 0.01% jest
+  optymistyczne dla płytkich rynków). Wrócić do tematu, jeśli dane pokażą problem.
 
 ### Platforma i baza danych
 - **Docelowo system działa na Raspberry Pi** (4 lub 5, 4 GB RAM wystarczy — ciężka praca
@@ -176,8 +185,8 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 
 ### Symulator (`python -m symulacja`, raport: `python -m symulacja.raport`)
 - Cykl co godzinę po zamknięciu świecy: rozliczenie otwartych → (jeśli limit otwartych
-  pozycji nie osiągnięty) screener → runda ławy → zapis w SQLite. Jedna runda na świecę —
-  restart nie dubluje rund ani kosztów LLM.
+  pozycji nie osiągnięty) screener → rundy ławy dla kolejnych par z rankingu → zapis w SQLite.
+  Restart w tej samej godzinie nie powtarza przeszukiwania ani kosztów LLM.
 - Wejście w świecy **po** decyzji, po cenie `ask`. Rozstrzyganie konserwatywne: luka pod SL →
   wyjście po otwarciu; SL i TP w jednej świecy → świece 1m, remis → SL.
 - **Oceny (transakcje hipotetyczne)**: referencja w każdej rundzie (SL 1×ATR, minimalny TP)
@@ -205,7 +214,8 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 - Zmierzony koszt (2026-10-24, 1 runda): ława 4 traderów **$0.0038 / rundę**; przy 1h
   (24 rundy/dzień, jedna para) ok. **$0.09 dziennie, ~$2.7 miesięcznie** + Head Trader
   (szacunek ~$0.01 za wywołanie, tylko przy TAK). Wcześniejszy szacunek ($0.25–0.5/dzień)
-  był 3–5× zawyżony. Koszt rośnie liniowo z liczbą par wskazanych przez screener.
+  był 3–5× zawyżony. Koszt rośnie liniowo z liczbą przeszukiwanych par: przy
+  `MAKS_PAR_NA_SWIECE = 6` i samych NIE do ok. $0.58 dziennie (~$17 miesięcznie).
   Najdroższe na rundę: gpt-5-mini i gpt-4.1-mini; gpt-5-nano zużywa dużo tokenów rozumowania.
 - Uwaga: modele rozumujące (rodzina gpt-5/gpt-6) liczą tokeny rozumowania jako wyjście
   i mogą nie wspierać `temperature` — używać niskiego `reasoning_effort`, sprawdzić

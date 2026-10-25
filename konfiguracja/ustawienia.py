@@ -45,6 +45,10 @@ SCREENER_MIN_ATR_PROCENT = 0.15  # poniżej coin zachowuje się jak stablecoin
 SCREENER_OKNO_ATR = 24  # mediana ATR% z ostatnich świec (przy 1h: doba)
 SCREENER_SWIECE = 100  # pobierane na kandydata (rozgrzewka ATR + okno)
 MAKS_OTWARTYCH_POZYCJI = 1  # łącznie, na wszystkich parach (crypto mocno skorelowane)
+# Przeszukiwanie rynku: gdy ława powie NIE, analizuje kolejną parę z rankingu screenera
+# (nigdy tej samej ponownie), aż do otwarcia pozycji albo wyczerpania limitu.
+# Koszt LLM rośnie maks. tyle razy — przy 6: do ok. $0.024 zamiast $0.004 na świecę.
+MAKS_PAR_NA_SWIECE = 6
 # Brak w API Binance pola odróżniającego tokenizowane akcje/złoto — lista ręczna,
 # uzupełniać, gdy w rankingu screenera pojawi się nowy taki token.
 WYKLUCZONE_AKTYWA = {

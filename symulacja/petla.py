@@ -16,6 +16,7 @@ from konfiguracja.ustawienia import (
     KATALOG_LOGOW,
     MAKS_CZAS_POZYCJI_SWIEC,
     MAKS_OTWARTYCH_POZYCJI,
+    MAKS_PAR_NA_SWIECE,
     OPOZNIENIE_PO_ZAMKNIECIU_S,
     PROBY_CYKLU,
     PRZERWA_PO_BLEDZIE_S,
@@ -190,7 +191,7 @@ def wykonaj_cykl(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str
         return {"status": "pominieta", "czas_swiecy": czas_swiecy}
 
     wynik_screenera = None
-    symbol = stan_poczatkowy["symbol"]
+    pary = [stan_poczatkowy["symbol"]]
     if SCREENER_WLACZONY:
         wynik_screenera = wybierz_pare(interwal, pomin={p["symbol"] for p in otwarte_pozycje})
         log.info(formatuj_ranking(wynik_screenera, liczba=5))
@@ -200,8 +201,24 @@ def wykonaj_cykl(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str
                                   pominieta=1, powody=["screener: żadna para nie spełnia kryteriów"],
                                   szczegoly={"screener": _skrot_screenera(wynik_screenera)})
             return {"status": "brak_pary", "czas_swiecy": czas_swiecy}
-        symbol = wynik_screenera["symbol"]
+        pary = [para["symbol"] for para in wynik_screenera["ranking"][:MAKS_PAR_NA_SWIECE]]
 
+    # Ława odrzuciła parę → kolejna z rankingu (zawsze inna para, nigdy ta sama ponownie),
+    # aż do otwarcia pozycji albo wyczerpania limitu MAKS_PAR_NA_SWIECE.
+    rundy = []
+    for symbol in pary:
+        runda = _runda_lawy(polaczenie, graf, stan_poczatkowy, symbol, czas_swiecy, teraz, wynik_screenera)
+        rundy.append(runda)
+        if runda.get("otwarta_pozycja") or runda["status"] == "juz_byla":
+            break
+    return {"status": "runda", "rundy": rundy, "czas_swiecy": czas_swiecy}
+
+
+def _runda_lawy(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str, Any], symbol: str,
+                czas_swiecy: pd.Timestamp, teraz: pd.Timestamp,
+                wynik_screenera: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Jedna runda ławy dla jednej pary: graf → zapis. Zwraca status i czy otwarto pozycję."""
+    interwal = stan_poczatkowy["interwal"]
     stan = {
         **stan_poczatkowy,
         "symbol": symbol,
@@ -215,16 +232,16 @@ def wykonaj_cykl(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str
     czas_z_danych = pd.Timestamp(wynik["analiza_techniczna"]["czas_ostatniej_swiecy"])
     if czas_z_danych != czas_swiecy:
         log.warning(f"Giełda zwróciła świecę {czas_z_danych} zamiast {czas_swiecy} — zapisuję pod czasem z danych.")
-        if baza.runda_dla_swiecy_istnieje(polaczenie, interwal, czas_z_danych):
-            return {"status": "juz_byla", "czas_swiecy": czas_z_danych}
+    if baza.runda_istnieje(polaczenie, symbol, interwal, czas_z_danych):
+        return {"status": "juz_byla", "symbol": symbol, "czas_swiecy": czas_z_danych}
 
     runda_id = _zapisz_wynik_rundy(polaczenie, wynik, zuzycie, czas_z_danych, wynik_screenera)
     zapisz_stan(wynik, zuzycie)
     glosowanie = wynik["wynik_glosowania"]
+    otwarta = bool(wynik["decyzja_koncowa"].get("otworz_pozycje"))
     log.info(f"Runda #{runda_id} {symbol} ({czas_z_danych}): {glosowanie['tak']} TAK / {glosowanie['nie']} NIE, "
-             f"otwarcie: {wynik['decyzja_koncowa'].get('otworz_pozycje')}, "
-             f"koszt LLM ${sum(w['koszt_usd'] or 0 for w in zuzycie):.4f}")
-    return {"status": "runda", "runda_id": runda_id, "czas_swiecy": czas_z_danych}
+             f"otwarcie: {otwarta}, koszt LLM ${sum(w['koszt_usd'] or 0 for w in zuzycie):.4f}")
+    return {"status": "runda", "runda_id": runda_id, "symbol": symbol, "otwarta_pozycja": otwarta}
 
 
 def uruchom(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str, Any], raz: bool = False) -> None:
