@@ -21,7 +21,7 @@ PARA_BENCHMARKU = "BTC/USDT"
 MIN_TRANSAKCJI_DO_WNIOSKOW = 100  # przy ~0.25 R przewagi i odch. 1.25 R — ok. 2σ
 
 
-def _statystyki_transakcji(wyniki_r: pd.Series) -> dict:
+def statystyki_transakcji(wyniki_r: pd.Series) -> dict:
     if wyniki_r.empty:
         return {"liczba": 0}
     zyski, straty = wyniki_r[wyniki_r > 0].sum(), -wyniki_r[wyniki_r < 0].sum()
@@ -34,7 +34,7 @@ def _statystyki_transakcji(wyniki_r: pd.Series) -> dict:
     }
 
 
-def _maks_spadek_procent(kapital: pd.Series) -> float:
+def maks_spadek_procent(kapital: pd.Series) -> float:
     szczyt = kapital.cummax()
     return float(((kapital - szczyt) / szczyt * 100).min()) if not kapital.empty else 0.0
 
@@ -183,21 +183,21 @@ def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
     if zamkniete.empty:
         linie.append("  brak zamkniętych transakcji")
     else:
-        linie.append(_linia_statystyk("Ława", _statystyki_transakcji(zamkniete["wynik_r"])))
+        linie.append(_linia_statystyk("Ława", statystyki_transakcji(zamkniete["wynik_r"])))
         kapital = start + zamkniete.sort_values("czas_wyjscia")["wynik_usd"].cumsum()
         czas_trwania = (pd.to_datetime(zamkniete["czas_wyjscia"]) - pd.to_datetime(zamkniete["czas_wejscia"])).mean()
         powody = zamkniete["powod"].value_counts().to_dict()
         linie += [
-            f"  Maks. spadek kapitału: {_maks_spadek_procent(pd.concat([pd.Series([start]), kapital])):.2f}%",
+            f"  Maks. spadek kapitału: {maks_spadek_procent(pd.concat([pd.Series([start]), kapital])):.2f}%",
             f"  Średni czas pozycji: {czas_trwania} | wyjścia: {powody}",
         ]
     otwarte = int((pozycje["status"] == "otwarta").sum()) if not pozycje.empty else 0
     linie.append(f"  Otwarte pozycje: {otwarte}")
 
     linie += ["", "STRATEGIE ODNIESIENIA (te same rundy)"]
-    linie.append(_linia_statystyk("Zawsze wchodź", _statystyki_transakcji(oceny_ref["wynik_r"])))
+    linie.append(_linia_statystyk("Zawsze wchodź", statystyki_transakcji(oceny_ref["wynik_r"])))
     heurystyka = oceny_ref[oceny_ref["ma_sygnal_heurystyczny"] == 1]
-    linie.append(_linia_statystyk("Heurystyka RSI/MACD", _statystyki_transakcji(heurystyka["wynik_r"])))
+    linie.append(_linia_statystyk("Heurystyka RSI/MACD", statystyki_transakcji(heurystyka["wynik_r"])))
     try:
         btc = kup_i_trzymaj_btc(rundy)
         pary = kup_i_trzymaj_pary(rundy)

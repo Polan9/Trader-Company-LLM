@@ -12,6 +12,13 @@ KATALOG_DANYCH = Path(os.environ.get("TRADER_KATALOG_DANYCH", KATALOG_PROJEKTU /
 PLIK_BAZY = KATALOG_DANYCH / "trader.db"
 KATALOG_LOGOW = KATALOG_DANYCH / "logi"
 
+# --- Interfejs (API) ---
+# Domyślnie tylko ten komputer; na Raspberry Pi ustawić TRADER_API_HOST=0.0.0.0 (dostęp z sieci
+# domowej / Tailscale). Nie wystawiać portu do internetu.
+API_HOST = os.environ.get("TRADER_API_HOST", "127.0.0.1")
+API_PORT = int(os.environ.get("TRADER_API_PORT", "8000"))
+KATALOG_INTERFEJSU = KATALOG_PROJEKTU / "interfejs" / "dist"  # zbudowany frontend (npm run build)
+
 # --- Tryb ---
 TRYB = "symulacja"  # symulacja | testnet | realny — zlecenia jeszcze nie są składane
 

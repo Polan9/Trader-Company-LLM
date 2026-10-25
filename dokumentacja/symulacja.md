@@ -114,10 +114,10 @@ Ctrl+C kończy pracę i zamyka bazę.
 Poniżej tej liczby raport ostrzega, że wyniki mogą być przypadkowe (przewaga ~0.25 R przy
 odchyleniu ~1.25 R potrzebuje ok. 100 transakcji do wykrycia na poziomie ~2σ).
 
-### `_statystyki_transakcji(wyniki_r) -> dict`
+### `statystyki_transakcji(wyniki_r) -> dict`
 Liczba, skuteczność %, średni R, suma R, profit factor (suma zysków / suma strat).
 
-### `_maks_spadek_procent(kapital) -> float`
+### `maks_spadek_procent(kapital) -> float`
 Największy spadek kapitału od szczytu w %.
 
 ### `PARA_BENCHMARKU = "BTC/USDT"`

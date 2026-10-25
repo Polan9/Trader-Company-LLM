@@ -76,6 +76,9 @@ Wynik zapytania SQL jako DataFrame — dla raportu.
 > Uwaga: funkcje zapisu nie robią `commit` same — wywołujący grupuje je w `with polaczenie:`,
 > żeby runda zapisała się w całości albo wcale.
 
+## `zapis/odczyt.py` — odczyty dla interfejsu
+Zapytania tylko do odczytu (połączenie `mode=ro`) używane przez API — opis w [api.md](api.md).
+
 ## `zapis/plik_stanu.py` — czytelny podgląd ostatniej rundy
 
 ### `_slownik(dane) -> list[str]`

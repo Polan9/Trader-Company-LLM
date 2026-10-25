@@ -31,7 +31,9 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   (SL / TP / zamknięcie po `MAKS_CZAS_POZYCJI_SWIEC`, maks. `MAKS_OTWARTYCH_POZYCJI`
   otwartych pozycji, ława nie zbiera się po osiągnięciu limitu). Do ustalenia: wcześniejsze wyjście decyzją ławy,
   trailing stop, SL/TP jako zlecenia OCO na giełdzie (przy trybie testnet/realny).
-- **UI (po angielsku)** — m.in. definiowanie ról traderów i zakresu danych, jakie dostają.
+- **UI — kolejne etapy** (etap 1 gotowy, patrz „Interfejs”): etap 2 — biuro 3D (lepsze modele,
+  pokoje, przepływ danych), etap 3 — wykresy w statystykach, etap 4 — animacje postaci,
+  odświeżanie na żywo, edycja ról i zakresu danych z UI, logowanie.
 - Futures / short i ewentualnie akcje.
 
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
@@ -39,6 +41,22 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   kilka otwartych pozycji naraz (`MAKS_OTWARTYCH_POZYCJI` > 1 — crypto są mocno skorelowane).
 
 ## Podjęte decyzje
+
+### Interfejs (decyzja 2026-10-25; opis kodu: `dokumentacja/api.md`, `dokumentacja/interfejs.md`)
+- **W przeglądarce**, dostępny z różnych urządzeń (telefon, tablet, komputer) — układ responsywny.
+- Stos: **FastAPI** (Python, `api/`) — API tylko do odczytu + serwowanie zbudowanego frontendu;
+  **React + TypeScript + Vite** (`interfejs/`), **react-three-fiber + drei** (biuro 3D),
+  **lightweight-charts** (świece). Na Pi jeden proces (`python -m api`), Node.js tylko do budowania.
+- API czyta bazę w trybie `mode=ro` — interfejs nie może zmienić danych symulatora.
+- Dostęp: domyślnie `127.0.0.1`; na Pi `TRADER_API_HOST=0.0.0.0` w sieci domowej, spoza domu
+  przez **Tailscale**. **Nie wystawiać portu do internetu.** Logowanie — etap 4.
+- Zakładki: **Preview** — latająca makieta biura 3D (obrót, przybliżenie): duży kwadratowy pokój
+  z owalnym stołem i miejscem dla każdego tradera, po prawej gabinet Head Tradera i pokój
+  pozostałych (Risk Manager, Screener, Researcher, Execution); w przyszłości animacje postaci
+  i wizualizacja tego, co dzieje się w kodzie. **Reports** — raport każdej iteracji z podglądem
+  (ranking screenera, wykres świec z poziomami, opinie, oceny). **Statistics** — statystyki.
+- Napisy UI po angielsku; dane z systemu (uzasadnienia LLM, interpretacje) zostają po polsku.
+- Wersje pakietów npm przypięte dokładnie w `interfejs/package.json`.
 
 ### Screener (`screener/wybor.py`, opis: `dokumentacja/screener.md`)
 - **Przed każdą rundą** screener wybiera **jedną** parę, o której dyskutuje ława. Kod, bez LLM.
@@ -267,7 +285,11 @@ lawa/modele.py              # schematy odpowiedzi LLM (pydantic)
 lawa/llm.py                 # jedyne miejsce wywołań LLM (łatwe podmienienie w testach)
 screener/wybor.py           # wybór pary przed rundą (koszt/ATR, wolumen, spread)
 zapis/baza.py               # SQLite (WAL) — jedyne miejsce znające silnik bazy
+zapis/odczyt.py             # zapytania tylko do odczytu dla API
 zapis/plik_stanu.py         # czytelny podgląd ostatniej rundy (trading_state.txt)
+api/serwer.py               # FastAPI: endpointy /api/* + serwowanie interfejs/dist
+api/__main__.py             # python -m api
+interfejs/                  # frontend (React + TypeScript + Vite), src/zakladki/: Podglad, Raporty, Statystyki
 symulacja/petla.py          # pętla symulatora: rozliczenie → runda → zapis
 symulacja/ocena.py          # rozstrzyganie SL/TP/czas na świecach, wynik netto w R
 symulacja/raport.py         # raport skuteczności i karta traderów
@@ -314,5 +336,12 @@ dokumentacja/               # opis każdej funkcji: co robi i jak działa
   `.venv\Scripts\python.exe -m symulacja` (symulator), `-m symulacja.raport` (raport).
 - Baza i logi w `dane_lokalne/` (ignorowane przez git); inny katalog przez zmienną
   środowiskową `TRADER_KATALOG_DANYCH`.
+- Zależności Pythona: `requirements.txt` (pip freeze; `winloop` tylko na Windows).
+  Nowy pakiet = dopisać do `requirements.txt` i sprawdzić dostępność na ARM64.
+- Interfejs: `.venv\Scripts\python.exe -m api` → http://127.0.0.1:8000. Po zmianach
+  w `interfejs/src`: `npm run build` w `interfejs/` (Node.js: `C:\Program Files\nodejs`,
+  może nie być w PATH powłoki Claude — dodać `export PATH="/c/Program Files/nodejs:$PATH"`).
+  `interfejs/node_modules` i `interfejs/dist` ignorowane przez git.
+- Symulator i serwer interfejsu to **osobne procesy** — restart jednego nie wpływa na drugi.
 - Pakiety tylko do `.venv`: `.venv\Scripts\pip.exe install <pakiet>`
 - `.env` w katalogu głównym, ładowany jawną ścieżką (`KATALOG_PROJEKTU / ".env"`).

@@ -1,0 +1,81 @@
+:root {
+  --tlo: #0b1220;
+  --karta: #121b2c;
+  --ramka: #1f2a3d;
+  --tekst: #e6edf7;
+  --przygaszony: #8b97ab;
+  --tak: #26a69a;
+  --nie: #ef5350;
+  --akcent: #f5c542;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--tekst);
+  background: var(--tlo);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tlo); }
+button { font: inherit; color: inherit; cursor: pointer; }
+h2 { font-size: 1.1rem; margin: 0 0 12px; }
+h3 { font-size: 0.95rem; margin: 0 0 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--ramka); white-space: nowrap; }
+th { color: var(--przygaszony); font-weight: 500; }
+
+.aplikacja { display: flex; flex-direction: column; min-height: 100vh; }
+.naglowek { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 10px 16px; border-bottom: 1px solid var(--ramka); position: sticky; top: 0; background: var(--tlo); z-index: 10; }
+.logo { font-weight: 700; color: var(--akcent); }
+.zakladki { display: flex; gap: 6px; }
+.zakladka { background: transparent; border: 1px solid var(--ramka); border-radius: 8px; padding: 6px 14px; }
+.zakladka.aktywna { background: var(--karta); border-color: var(--akcent); }
+.stan { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; margin-left: auto; }
+.tresc { flex: 1; padding: 16px; }
+
+.karta { background: var(--karta); border: 1px solid var(--ramka); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; overflow-x: auto; }
+.przygaszony { color: var(--przygaszony); font-size: 0.85rem; }
+.blad { color: var(--nie); font-size: 0.85rem; }
+.plus { color: var(--tak); }
+.minus { color: var(--nie); }
+.znaczek { font-size: 0.7rem; border: 1px solid var(--przygaszony); border-radius: 4px; padding: 1px 5px; margin-left: 8px; color: var(--przygaszony); }
+.znaczek.tak { border-color: var(--tak); color: var(--tak); }
+
+/* Reports */
+.raporty { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; }
+.raporty > * { min-width: 0; } /* szerokie tabele przewijają się w karcie, nie rozpychają strony */
+.lista-iteracji { display: flex; flex-direction: column; gap: 6px; max-height: calc(100vh - 100px); overflow-y: auto; position: sticky; top: 70px; }
+.iteracja { text-align: left; background: var(--karta); border: 1px solid var(--ramka); border-radius: 8px; padding: 8px 10px; }
+.iteracja.aktywna { border-color: var(--akcent); }
+.iteracja-czas { font-size: 0.85rem; margin-bottom: 4px; }
+.iteracja-pary { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.para { font-size: 0.75rem; background: #1a2436; border-radius: 4px; padding: 1px 6px; color: var(--przygaszony); }
+.para.tak { color: var(--tak); }
+.przelacznik-par { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.wykres { width: 100%; height: 280px; margin: 8px 0; }
+.wskazniki { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; }
+.opinie { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.opinia { margin-bottom: 0; }
+.opinia.tak { border-color: var(--tak); }
+.opinia p { font-size: 0.85rem; line-height: 1.45; margin: 8px 0 0; }
+.opinia-naglowek { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.glos { margin-left: auto; font-weight: 700; font-size: 0.8rem; }
+.glos.tak { color: var(--tak); }
+.glos.nie { color: var(--nie); }
+.uwaga { color: var(--akcent); font-size: 0.8rem; margin-top: 6px; }
+
+/* Statistics */
+.kafelki { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-bottom: 4px; }
+.kafelek div { font-size: 0.9rem; margin-top: 4px; }
+
+/* Preview */
+.podglad { position: relative; height: calc(100vh - 90px); min-height: 420px; border: 1px solid var(--ramka); border-radius: 10px; overflow: hidden; }
+.panel-osoby { position: absolute; top: 12px; right: 12px; width: min(380px, calc(100% - 24px)); max-height: calc(100% - 24px); overflow-y: auto; }
+.panel-osoby .zamknij { position: absolute; top: 6px; right: 10px; background: none; border: none; font-size: 1.3rem; }
+.opinia-krotka p { font-size: 0.85rem; margin: 4px 0 10px; }
+.podpowiedz { position: absolute; bottom: 8px; left: 12px; }
+
+@media (max-width: 800px) {
+  .raporty { grid-template-columns: minmax(0, 1fr); }
+  .tresc { padding: 12px; }
+  .opinie { grid-template-columns: minmax(0, 1fr); }
+  .lista-iteracji { position: static; max-height: 240px; }
+  .stan { margin-left: 0; }
+}

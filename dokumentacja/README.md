@@ -34,6 +34,8 @@ portfel w SQLite i rozlicza transakcje na kolejnych świecach.
 | `.venv\Scripts\python.exe -m symulacja --raz` | jeden cykl symulatora |
 | `.venv\Scripts\python.exe -m symulacja.raport` | raport skuteczności z bazy |
 | `.venv\Scripts\python.exe -m analizy.atr_vs_koszty` | analiza ATR vs koszty |
+| `.venv\Scripts\python.exe -m api` | interfejs w przeglądarce: http://127.0.0.1:8000 |
+| `npm run build` (w `interfejs/`) | budowanie frontendu po zmianach w `interfejs/src` |
 
 ## Spis modułów
 
@@ -48,6 +50,8 @@ portfel w SQLite i rozlicza transakcje na kolejnych świecach.
 | [symulacja.md](symulacja.md) | `symulacja/*` — pętla, ocena transakcji, raport |
 | [zapis.md](zapis.md) | `zapis/baza.py`, `zapis/plik_stanu.py` |
 | [analizy.md](analizy.md) | `analizy/atr_vs_koszty.py` |
+| [api.md](api.md) | `api/*` — serwer interfejsu (FastAPI), `zapis/odczyt.py` |
+| [interfejs.md](interfejs.md) | `interfejs/src/*` — aplikacja w przeglądarce (React, TypeScript, 3D) |
 
 ## Pojęcia
 
