@@ -41,6 +41,7 @@ MIN_ZYSK_DO_RYZYKA = 1.5
 TOLERANCJA_ZYSK_DO_RYZYKA = 0.01  # zaokrąglenia cen przez LLM — 1.495 przechodzi, 1.489 nie
 MIN_SL_ATR = 0.5  # odległość SL od ceny wejścia, w wielokrotnościach ATR
 MAKS_SL_ATR = 3.0
+TOLERANCJA_SL_ATR = 0.01  # zaokrąglenia cen przez LLM — SL 0.499 × ATR przechodzi, 0.489 × ATR nie
 
 # --- Screener (wybór pary przed zwołaniem ławy) ---
 SCREENER_WLACZONY = True  # False = ława zawsze analizuje SYMBOL

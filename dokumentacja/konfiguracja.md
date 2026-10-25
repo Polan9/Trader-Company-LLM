@@ -13,7 +13,7 @@ Same stałe, bez funkcji. Najważniejsze grupy:
 | Rynek | `SYMBOL`, `INTERWAL`, `BUDZET_POCZATKOWY` | BTC/USDT, 1h, 1000 USD |
 | Koszty | `PROWIZJA_STRONA_PROCENT`, `POSLIZG_STRONA_PROCENT` | założenia — do kalibracji po żywym teście |
 | Ryzyko | `RYZYKO_NA_TRANSAKCJE_PROCENT`, `MAKS_POZYCJA_PROCENT_BUDZETU`, `MIN_WIELKOSC_POZYCJI_USD`, `MAKS_DZIENNA_STRATA_PROCENT`, `MAKS_TRANSAKCJI_DZIENNIE` | twarde limity Risk Managera |
-| | `MIN_ZYSK_DO_RYZYKA`, `TOLERANCJA_ZYSK_DO_RYZYKA`, `MIN_SL_ATR`, `MAKS_SL_ATR` | reguły SL/TP |
+| | `MIN_ZYSK_DO_RYZYKA`, `TOLERANCJA_ZYSK_DO_RYZYKA`, `MIN_SL_ATR`, `MAKS_SL_ATR`, `TOLERANCJA_SL_ATR` | reguły SL/TP (tolerancje na zaokrąglenia cen przez LLM) |
 | Screener | `SCREENER_WLACZONY` | `False` = ława zawsze analizuje `SYMBOL` |
 | | `SCREENER_LICZBA_KANDYDATOW`, `SCREENER_MIN_WOLUMEN_USDT`, `SCREENER_MAKS_SPREAD_PROCENT`, `SCREENER_MAKS_KOSZT_DO_ATR`, `SCREENER_MIN_ATR_PROCENT`, `SCREENER_OKNO_ATR`, `SCREENER_SWIECE` | kryteria wyboru pary — opis w [screener.md](screener.md) |
 | | `WYKLUCZONE_AKTYWA` | ręczna lista stablecoinów i tokenizowanych akcji/złota |

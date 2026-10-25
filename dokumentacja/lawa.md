@@ -69,7 +69,9 @@ dla SL = 1×ATR. Te same reguły sprawdza potem `sprawdz_sl_tp`.
 ### `sprawdz_sl_tp(cena, stop_loss, take_profit, atr, koszt_procent) -> list[str]`
 **Co robi:** zwraca listę naruszeń (pusta = poprawne).
 **Sprawdza:** SL i TP podane; SL poniżej ceny, TP powyżej; zysk/ryzyko netto ≥ 1.5
-(z tolerancją `TOLERANCJA_ZYSK_DO_RYZYKA` na zaokrąglenia); odległość SL w 0.5–3 × ATR.
+(z tolerancją `TOLERANCJA_ZYSK_DO_RYZYKA` na zaokrąglenia); odległość SL w 0.5–3 × ATR
+(z tolerancją `TOLERANCJA_SL_ATR` = 0.01 × ATR — LLM kopiuje granicę z promptu i po zaokrągleniu
+wypada np. 0.4999 × ATR).
 
 ### `statystyki_poziomow(wartosci) -> dict`
 Mediana, minimum, maksimum listy cen (SL albo TP z głosów TAK).

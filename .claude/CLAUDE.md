@@ -191,8 +191,8 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 ### Limity Risk Managera (`konfiguracja/ustawienia.py`)
 - Ryzyko na transakcję 1% budżetu (strata przy SL **z kosztami**), maks. pozycja 25% budżetu,
   min. pozycja 10 USD, maks. dzienna strata 3%, maks. 5 transakcji dziennie.
-- SL w odległości 0.5–3 × ATR, zysk/ryzyko **po kosztach** ≥ 1.5 (tolerancja 0.01 na
-  zaokrąglenia cen przez LLM) — te same reguły (z wyliczonym minimalnym TP) trafiają do promptów.
+- SL w odległości 0.5–3 × ATR (tolerancja 0.01 × ATR), zysk/ryzyko **po kosztach** ≥ 1.5
+  (tolerancja 0.01) — tolerancje na zaokrąglenia cen przez LLM, który kopiuje granice z promptu — te same reguły (z wyliczonym minimalnym TP) trafiają do promptów.
 - Skala pozycji od tradera (0–100) to część pełnej pozycji wyliczonej przez Risk Managera,
   nie procent budżetu.
 - Minimalna pozycja 10 USD (własny próg; Binance wymaga min. 5 USDT dla BTC/USDT).

@@ -14,6 +14,7 @@ from konfiguracja.ustawienia import (
     POSLIZG_STRONA_PROCENT,
     PROWIZJA_STRONA_PROCENT,
     RYZYKO_NA_TRANSAKCJE_PROCENT,
+    TOLERANCJA_SL_ATR,
     TOLERANCJA_ZYSK_DO_RYZYKA,
 )
 
@@ -72,7 +73,7 @@ def sprawdz_sl_tp(
             f"(min. TP dla tego SL: {minimalny_take_profit(cena, stop_loss, koszt_procent):.8g})"
         )
     odleglosc_sl = cena - stop_loss
-    if not MIN_SL_ATR * atr <= odleglosc_sl <= MAKS_SL_ATR * atr:
+    if not (MIN_SL_ATR - TOLERANCJA_SL_ATR) * atr <= odleglosc_sl <= (MAKS_SL_ATR + TOLERANCJA_SL_ATR) * atr:
         bledy.append(f"odległość SL {odleglosc_sl / atr:.2f} × ATR poza zakresem {MIN_SL_ATR}–{MAKS_SL_ATR}")
     return bledy
 
