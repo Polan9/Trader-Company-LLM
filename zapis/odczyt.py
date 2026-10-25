@@ -56,6 +56,29 @@ def stan_portfela(polaczenie: sqlite3.Connection) -> Dict[str, Any]:
     }
 
 
+def iteracja_kompletna(polaczenie: sqlite3.Connection, iteracja_ms: int, maks_par: int,
+                       teraz: Optional[pd.Timestamp] = None, cisza_s: int = 180) -> bool:
+    """Czy symulator skończył iterację (rundy zapisywane są po kolei przez ~minutę).
+
+    Kompletna, gdy: runda pominięta (limit pozycji / brak pary), otwarto pozycję (koniec przeszukiwania),
+    przeanalizowano tyle par, ile pozwala limit i ranking screenera, albo od ostatniego zapisu minęło
+    `cisza_s` sekund (np. błąd w trakcie przeszukiwania)."""
+    rundy = polaczenie.execute(
+        "SELECT pominieta, otworz_pozycje, czas_utc, szczegoly FROM rundy WHERE czas_swiecy = ?",
+        (ms_na_czas(iteracja_ms),),
+    ).fetchall()
+    if not rundy:
+        return False
+    if any(r["pominieta"] or r["otworz_pozycje"] for r in rundy):
+        return True
+    screener = _json_lub_pusty(rundy[0]["szczegoly"], {}).get("screener") or {}
+    oczekiwane = min(maks_par, len(screener.get("ranking", []))) if screener else 1
+    if len(rundy) >= oczekiwane:
+        return True
+    ostatni_zapis = max(pd.Timestamp(r["czas_utc"]) for r in rundy)
+    return ((teraz or pd.Timestamp.now(tz="UTC")) - ostatni_zapis).total_seconds() > cisza_s
+
+
 def lista_iteracji(polaczenie: sqlite3.Connection, limit: int = 50,
                    przed_ms: Optional[int] = None) -> List[Dict[str, Any]]:
     """Ostatnie iteracje (najnowsze pierwsze) ze skrótem każdej rundy."""

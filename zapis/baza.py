@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS opinie (
     stop_loss REAL,
     take_profit REAL,
     skala_pozycji REAL,
+    pewnosc REAL,                       -- 0–100, deklarowana przez tradera (NULL: starsze rundy / głos unieważniony)
     uwagi TEXT                          -- JSON lista
 );
 CREATE TABLE IF NOT EXISTS oceny (
@@ -118,10 +119,26 @@ def polacz(sciezka: Path) -> sqlite3.Connection:
     return polaczenie
 
 
+_MIGRACJE = [
+    # (tabela, kolumna, definicja) — kolumny dodane po pierwszej wersji schematu
+    ("opinie", "pewnosc", "REAL"),
+]
+
+
+def _migruj(polaczenie: sqlite3.Connection) -> None:
+    """Dodaje brakujące kolumny w istniejącej bazie (CREATE TABLE IF NOT EXISTS nie zmienia tabel)."""
+    for tabela, kolumna, definicja in _MIGRACJE:
+        istniejace = {w["name"] for w in polaczenie.execute(f"PRAGMA table_info({tabela})")}
+        if kolumna not in istniejace:
+            polaczenie.execute(f"ALTER TABLE {tabela} ADD COLUMN {kolumna} {definicja}")
+
+
 def inicjalizuj(polaczenie: sqlite3.Connection, budzet_poczatkowy: float) -> None:
-    """Tworzy tabele i portfel (tylko przy pierwszym uruchomieniu — kolejne nie zmieniają budżetu)."""
+    """Tworzy tabele i portfel (tylko przy pierwszym uruchomieniu — kolejne nie zmieniają budżetu)
+    oraz dodaje kolumny z nowszych wersji schematu."""
     with polaczenie:
         polaczenie.executescript(_SCHEMAT)
+        _migruj(polaczenie)
         polaczenie.execute(
             "INSERT OR IGNORE INTO portfel (id, budzet_poczatkowy, utworzono) VALUES (1, ?, ?)",
             (budzet_poczatkowy, _czas(pd.Timestamp.now(tz="UTC"))),
@@ -199,10 +216,10 @@ def zapisz_runde(polaczenie: sqlite3.Connection, **pola: Any) -> int:
 def zapisz_opinie(polaczenie: sqlite3.Connection, runda_id: int, opinie: Dict[str, Dict[str, Any]]) -> None:
     polaczenie.executemany(
         "INSERT INTO opinie (runda_id, trader_id, nazwa, model, glos, uzasadnienie, stop_loss, "
-        "take_profit, skala_pozycji, uwagi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "take_profit, skala_pozycji, pewnosc, uwagi) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
             (runda_id, id_, o["nazwa"], o["model"], o["glos"], o["uzasadnienie"], o["stop_loss"],
-             o["take_profit"], o["wielkosc_pozycji_procent"], _json(o["uwagi"]))
+             o["take_profit"], o["wielkosc_pozycji_procent"], o.get("pewnosc"), _json(o["uwagi"]))
             for id_, o in opinie.items()
         ],
     )

@@ -31,9 +31,9 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   (SL / TP / zamknięcie po `MAKS_CZAS_POZYCJI_SWIEC`, maks. `MAKS_OTWARTYCH_POZYCJI`
   otwartych pozycji, ława nie zbiera się po osiągnięciu limitu). Do ustalenia: wcześniejsze wyjście decyzją ławy,
   trailing stop, SL/TP jako zlecenia OCO na giełdzie (przy trybie testnet/realny).
-- **UI — kolejne etapy** (etap 1 gotowy, patrz „Interfejs”): etap 2 — biuro 3D (lepsze modele,
-  pokoje, przepływ danych), etap 3 — wykresy w statystykach, etap 4 — animacje postaci,
-  odświeżanie na żywo, edycja ról i zakresu danych z UI, logowanie.
+- **UI — kolejne etapy** (etapy 1–2 gotowe, patrz „Interfejs”): etap 3 — wykresy w statystykach,
+  etap 4 — modele postaci (GLTF) i bogatsze animacje, odświeżanie na żywo (WebSocket/SSE),
+  edycja ról i zakresu danych z UI, logowanie.
 - Futures / short i ewentualnie akcje.
 
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
@@ -56,6 +56,16 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   i wizualizacja tego, co dzieje się w kodzie. **Reports** — raport każdej iteracji z podglądem
   (ranking screenera, wykres świec z poziomami, opinie, oceny). **Statistics** — statystyki.
 - Napisy UI po angielsku; dane z systemu (uzasadnienia LLM, interpretacje) zostają po polsku.
+- Biuro 3D (etap 2, `interfejs/src/biuro/`): ściany znikają od strony kamery (widok makiety przy
+  każdym obrocie), postacie z brył, dymki z głosami, tablica na ścianie, przyciski widoków
+  i **odtwarzanie ostatniej iteracji** krok po kroku w kolejności z `symulacja/petla.py`
+  (screener → para → głosy → wynik → Head Trader → Risk Manager) z animowanym przepływem danych.
+  Bez zewnętrznych modeli — wszystko z prostych brył.
+- **Dynamiczne iteracje:** zakładka Preview co 15 s sprawdza stan; nowa iteracja odtwarza się sama,
+  gdy symulator skończy ją zapisywać (`ostatnia_iteracja_kompletna` w `/api/stan`). Przełącznik
+  Auto-replay on/off.
+- Serwer interfejsu uruchamiany jak symulator — `Start-Process` z karty terminala
+  „interfejs (nie zamykać)”; zamknięcie karty zatrzymuje proces.
 - Wersje pakietów npm przypięte dokładnie w `interfejs/package.json`.
 
 ### Screener (`screener/wybor.py`, opis: `dokumentacja/screener.md`)
@@ -148,6 +158,15 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 - Do czasu modułu newsów Analityk newsów ma `aktywny: false` → głosuje 4 traderów,
   więc do wejścia potrzeba min. 3 głosów TAK.
 - Awaria modelu tradera lub głos `TAK` łamiący reguły SL/TP → liczony jako `NIE` (z uwagą w opinii).
+- **Pewność głosu (od 2026-10-25):** każdy trader podaje `pewnosc` 0–100; zapisywana w bazie
+  (`opinie.pewnosc`), raport i UI pokazują **trafność wg pewności**. Pewność nie wpływa na wynik
+  głosowania — służy do sprawdzenia, czy „bardzo pewny” znaczy coś w praktyce.
+- **„Force” (przepchnięcie pozycji mimo większości NIE) — odłożone.** Decyzja 2026-10-25: wrócić do
+  tematu po **~30 rozstrzygniętych głosach TAK** danego tradera. Warunki, jeśli dane go uzasadnią:
+  dla każdego tradera, który zapracuje wynikami (nie z góry dla jednego), wyraźnie dodatni średni R
+  jego TAK, wysoka trafność przy pewności 85+, maks. raz na 24 h, połowa pozycji, weto Risk Managera
+  bez zmian, osobna linia w raporcie. Powód odłożenia: po 5 rozstrzygnięciach scalper spadł z 2/3
+  do 2/5 (0.0 R) — za mała próba, a LLM-y źle kalibrują pewność.
 - Traderzy działają równolegle (fan-out w LangGraph) i **nie widzą swoich głosów** — brak owczego pędu.
 
 ### SL / TP / wielkość pozycji (hybryda)
@@ -290,6 +309,7 @@ zapis/plik_stanu.py         # czytelny podgląd ostatniej rundy (trading_state.t
 api/serwer.py               # FastAPI: endpointy /api/* + serwowanie interfejs/dist
 api/__main__.py             # python -m api
 interfejs/                  # frontend (React + TypeScript + Vite), src/zakladki/: Podglad, Raporty, Statystyki
+interfejs/src/biuro/        # makieta biura 3D: układ, ściany, meble, postacie, odtwarzanie iteracji
 symulacja/petla.py          # pętla symulatora: rozliczenie → runda → zapis
 symulacja/ocena.py          # rozstrzyganie SL/TP/czas na świecach, wynik netto w R
 symulacja/raport.py         # raport skuteczności i karta traderów

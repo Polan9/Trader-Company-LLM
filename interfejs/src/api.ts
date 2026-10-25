@@ -23,6 +23,7 @@ export interface Stan {
   liczba_rund: number;
   ostatnia_swieca: string | null;
   ostatnia_iteracja_ms: number | null;
+  ostatnia_iteracja_kompletna: boolean; // symulator skończył zapisywać rundy tej iteracji
   zamkniete_pozycje: number;
   wygrane_pozycje: number;
   otwarte_pozycje: Pozycja[];
@@ -55,6 +56,7 @@ export interface Opinia {
   stop_loss: number | null;
   take_profit: number | null;
   skala_pozycji: number | null;
+  pewnosc: number | null; // 0–100 deklarowana przez tradera (null: starsze rundy / głos unieważniony)
   uwagi: string[];
 }
 
@@ -138,7 +140,16 @@ export interface WierszKarty {
   trafnosc_procent: number | null;
   trafnosc_tak_procent: number | null;
   sredni_r_tak: number | null;
+  srednia_pewnosc: number | null;
   trafnosc_nie_procent: number | null;
+}
+
+export interface WierszPewnosci {
+  glos: "TAK" | "NIE";
+  przedzial: string;
+  liczba: number;
+  trafnosc_procent: number | null;
+  sredni_r: number | null;
 }
 
 export interface Statystyki {
@@ -150,6 +161,7 @@ export interface Statystyki {
   kup_i_trzymaj_btc: { zmiana_procent: number; netto_procent: number } | null;
   kup_i_trzymaj_pary: { symbol: string; netto_procent: number }[];
   karta_traderow: WierszKarty[];
+  trafnosc_wg_pewnosci: WierszPewnosci[];
   koszt_llm_dziennie: { dzien: string; koszt_usd: number; rundy: number }[];
 }
 

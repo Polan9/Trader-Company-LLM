@@ -15,6 +15,13 @@ class OpiniaTradera(BaseModel):
     take_profit: Optional[float] = Field(
         description="Cena take-profit powyżej ceny wejścia. Wymagana przy TAK, przy NIE null."
     )
+    pewnosc: float = Field(
+        description=(
+            "Jak bardzo jesteś pewien swojego głosu (TAK albo NIE), 0–100: 50 = rzut monetą, "
+            "70 = umiarkowanie pewny, 90+ = bardzo pewny, tylko przy wyjątkowo wyraźnym sygnale. "
+            "Oceniaj uczciwie — trafność jest mierzona osobno dla każdego poziomu pewności."
+        )
+    )
     wielkosc_pozycji_procent: Optional[float] = Field(
         description=(
             "Skala pełnej pozycji w procentach (0–100), NIE procent budżetu. Pełną pozycję wylicza "

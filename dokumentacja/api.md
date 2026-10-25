@@ -11,11 +11,11 @@ Gdy bazy nie ma → 503. Serwer działa niezależnie od symulatora (osobny proce
 
 | Metoda i ścieżka | Zwraca |
 |---|---|
-| `GET /api/stan` | budżet, wynik %, koszt LLM, liczba rund, ostatnia świeca, otwarte pozycje |
+| `GET /api/stan` | budżet, wynik %, koszt LLM, liczba rund, ostatnia świeca, otwarte pozycje, `ostatnia_iteracja_kompletna` (czy symulator skończył zapisywać ostatnią iterację — sygnał do auto-odtwarzania) |
 | `GET /api/iteracje?limit=50&przed=<ms>` | lista iteracji (najnowsze pierwsze) ze skrótem rund: para, decyzja, głosy |
 | `GET /api/iteracje/{id}` | pełna iteracja: ranking screenera, każda runda z analizą, tickerem, opiniami, ocenami, zużyciem LLM, pozycją; 404 gdy brak |
 | `GET /api/swiece?symbol=&wokol=<ms>&godzin_przed=24` | świece pary od `godzin_przed` przed chwilą decyzji do teraz (czas w sekundach) |
-| `GET /api/statystyki` | statystyki ławy i strategii odniesienia, krzywa kapitału, kup i trzymaj, karta traderów, koszt LLM dziennie |
+| `GET /api/statystyki` | statystyki ławy i strategii odniesienia, krzywa kapitału, kup i trzymaj, karta traderów, trafność wg pewności, koszt LLM dziennie |
 | `GET /api/lawa` | konfiguracja traderów (id, nazwa, aktywny, fokus, model) i Head Tradera |
 | `GET /docs` | automatyczna dokumentacja API (FastAPI) |
 | `GET /*` | zbudowany frontend z `interfejs/dist` (jeśli istnieje) |
@@ -54,6 +54,7 @@ Start `uvicorn` z `API_HOST` / `API_PORT`.
 | `czas_na_ms(czas_iso)` / `ms_na_czas(ms)` | konwersja czasu świecy ↔ id iteracji |
 | `_json_lub_pusty(tekst, domyslnie)` | parsuje kolumnę JSON albo zwraca wartość domyślną |
 | `stan_portfela(polaczenie)` | budżet, koszt LLM, liczba rund, otwarte i zamknięte pozycje |
+| `iteracja_kompletna(polaczenie, iteracja_ms, maks_par, teraz=None, cisza_s=180)` | czy iteracja jest skończona: runda pominięta, otwarta pozycja, przeanalizowano min(`maks_par`, długość rankingu) par albo od ostatniego zapisu minęło `cisza_s` s (np. błąd w trakcie) |
 | `lista_iteracji(polaczenie, limit, przed_ms)` | iteracje (rundy pogrupowane po świecy) ze skrótem każdej rundy |
 | `szczegoly_iteracji(polaczenie, iteracja_ms)` | pełne dane iteracji (screener, analiza, opinie, oceny, zużycie, pozycja); `None` gdy brak |
 | `koszt_llm_dziennie(polaczenie)` | koszt LLM i liczba rund per dzień (UTC) |

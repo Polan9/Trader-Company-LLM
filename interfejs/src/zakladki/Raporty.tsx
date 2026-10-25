@@ -137,6 +137,7 @@ function PodgladRundy({ runda, czasMs }: { runda: Runda; czasMs: number }) {
             <div key={o.trader_id} className={o.glos === "TAK" ? "karta opinia tak" : "karta opinia"}>
               <div className="opinia-naglowek">
                 <b>{o.nazwa}</b> <span className="przygaszony">{o.model}</span>
+                {o.pewnosc !== null && <span className="przygaszony">· confidence {o.pewnosc.toFixed(0)}</span>}
                 <span className={o.glos === "TAK" ? "glos tak" : "glos nie"}>{o.glos === "TAK" ? "YES" : "NO"}</span>
               </div>
               {o.glos === "TAK" && (

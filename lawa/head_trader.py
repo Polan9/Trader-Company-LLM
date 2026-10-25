@@ -18,7 +18,8 @@ def _formatuj_opinie(stan: AktualnyStan) -> str:
             f" | SL {opinia['stop_loss']:.8g} | TP {opinia['take_profit']:.8g} | skala pozycji {opinia['wielkosc_pozycji_procent']:.0f}%"
             if opinia["glos"] == "TAK" else ""
         )
-        linie.append(f"- {opinia['nazwa']}: {opinia['glos']}{poziomy}\n  Uzasadnienie: {opinia['uzasadnienie']}")
+        pewnosc = f" (pewność {opinia['pewnosc']:.0f})" if opinia.get("pewnosc") is not None else ""
+        linie.append(f"- {opinia['nazwa']}: {opinia['glos']}{pewnosc}{poziomy}\n  Uzasadnienie: {opinia['uzasadnienie']}")
     return "\n".join(linie)
 
 

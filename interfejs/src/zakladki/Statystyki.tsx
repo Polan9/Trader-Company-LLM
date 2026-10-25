@@ -28,7 +28,7 @@ export default function Statystyki() {
         <h3>Trader scorecard</h3>
         <table>
           <thead>
-            <tr><th>Trader</th><th>Votes</th><th>YES %</th><th>Resolved</th><th>Accuracy</th><th>YES acc.</th><th>NO acc.</th><th>Avg R (YES)</th></tr>
+            <tr><th>Trader</th><th>Votes</th><th>YES %</th><th>Resolved</th><th>Accuracy</th><th>YES acc.</th><th>NO acc.</th><th>Avg R (YES)</th><th>Avg confidence</th></tr>
           </thead>
           <tbody>
             {s.karta_traderow.map((w) => (
@@ -38,8 +38,30 @@ export default function Statystyki() {
                 <td>{w.trafnosc_tak_procent === null ? "—" : `${w.trafnosc_tak_procent.toFixed(0)}%`}</td>
                 <td>{w.trafnosc_nie_procent === null ? "—" : `${w.trafnosc_nie_procent.toFixed(0)}%`}</td>
                 <td>{liczbaR(w.sredni_r_tak)}</td>
+                <td>{w.srednia_pewnosc === null ? "—" : w.srednia_pewnosc.toFixed(0)}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="karta">
+        <h3>Accuracy by declared confidence</h3>
+        <div className="przygaszony">Does a trader's confidence mean anything? For NO votes, avg R is the reference trade result (negative = the NO avoided a loss).</div>
+        <table>
+          <thead><tr><th>Vote</th><th>Confidence</th><th>Resolved</th><th>Accuracy</th><th>Avg R</th></tr></thead>
+          <tbody>
+            {s.trafnosc_wg_pewnosci.filter((w) => w.liczba > 0).map((w) => (
+              <tr key={`${w.glos}${w.przedzial}`}>
+                <td className={w.glos === "TAK" ? "plus" : "minus"}>{w.glos === "TAK" ? "YES" : "NO"}</td>
+                <td>{w.przedzial}</td><td>{w.liczba}</td>
+                <td>{w.trafnosc_procent === null ? "—" : `${w.trafnosc_procent.toFixed(0)}%`}</td>
+                <td>{liczbaR(w.sredni_r)}</td>
+              </tr>
+            ))}
+            {s.trafnosc_wg_pewnosci.every((w) => w.liczba === 0) && (
+              <tr><td colSpan={5} className="przygaszony">No resolved votes with confidence yet (field added 2026-10-25).</td></tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -12,7 +12,7 @@ budżet początkowy + suma wyników zamkniętych pozycji (jedno źródło prawdy
 |---|---|
 | `portfel` | jeden wiersz: budżet początkowy i data utworzenia |
 | `rundy` | każda runda (także pominięta), unikalna per (para, interwał, świeca) — w jednej świecy może być kilka par z przeszukiwania; para z rankingu screenera (`BRAK`, gdy żadna nie przeszła); cena, ATR, koszt, decyzja, koszt LLM, szczegóły JSON (z rankingiem screenera) |
-| `opinie` | głos każdego tradera w rundzie: uzasadnienie, SL/TP, skala, uwagi |
+| `opinie` | głos każdego tradera w rundzie: uzasadnienie, SL/TP, skala, pewność (0–100, od 2026-10-25), uwagi |
 | `oceny` | transakcje hipotetyczne (referencja + głosy TAK) i ich wynik — do karty traderów |
 | `pozycje` | wirtualne pozycje ławy: wejście, SL/TP, wielkość, ryzyko, wynik USD/%/R |
 | `zuzycie_llm` | tokeny i koszt każdego wywołania modelu |
@@ -27,9 +27,16 @@ Serializacja do JSON z polskimi znakami; nieznane typy (np. Timestamp) jako teks
 Tworzy katalog, otwiera bazę, włącza **WAL** (odporność na utratę zasilania, równoległy
 odczyt) i klucze obce. Wiersze dostępne po nazwach kolumn.
 
+### `_MIGRACJE` i `_migruj(polaczenie)`
+Lista kolumn dodanych po pierwszej wersji schematu (`tabela`, `kolumna`, `definicja`) — obecnie
+`opinie.pewnosc`. `_migruj` sprawdza `PRAGMA table_info` i dodaje brakujące kolumny przez
+`ALTER TABLE` (bo `CREATE TABLE IF NOT EXISTS` nie zmienia istniejących tabel). Idempotentne.
+Nowa kolumna w istniejącej tabeli = dopisać ją do `_SCHEMAT` **i** do `_MIGRACJE`.
+
 ### `inicjalizuj(polaczenie, budzet_poczatkowy)`
-Tworzy tabele (jeśli nie ma) i portfel. **Budżet ustawiany tylko raz** — kolejne
-uruchomienia go nie zmieniają (`INSERT OR IGNORE`).
+Tworzy tabele (jeśli nie ma), uruchamia migracje i tworzy portfel. **Budżet ustawiany tylko raz** —
+kolejne uruchomienia go nie zmieniają (`INSERT OR IGNORE`). Wołane przez symulator przy starcie —
+API (tylko odczyt) nie migruje, więc po zmianie schematu najpierw uruchomić symulator.
 
 ### `budzet_poczatkowy(polaczenie) -> float`
 Budżet z tabeli `portfel`.

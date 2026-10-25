@@ -19,7 +19,8 @@ Skleja teksty bloków w kolejności z konfiguracji tradera.
 ## `lawa/modele.py` — schematy odpowiedzi LLM (pydantic)
 
 ### `class OpiniaTradera`
-`glos` (TAK/NIE), `uzasadnienie`, `stop_loss`, `take_profit`, `wielkosc_pozycji_procent`
+`glos` (TAK/NIE), `uzasadnienie`, `stop_loss`, `take_profit`, `pewnosc` (**0–100** — jak bardzo
+trader jest pewien swojego głosu; mierzona w raporcie „trafność wg pewności”), `wielkosc_pozycji_procent`
 (**skala 0–100 pełnej pozycji**, nie % budżetu). Opisy pól trafiają do schematu,
 który widzi model — to część instrukcji.
 
@@ -102,8 +103,10 @@ Słownik opinii z wartościami domyślnymi (głos NIE, puste poziomy, lista uwag
 1. sprawdza, że w stanie są dane i analiza,
 2. wywołuje model przez `llm.zapytaj_model` (schemat `OpiniaTradera`),
 3. błąd modelu → opinia NIE z uwagą (runda trwa dalej),
-4. głos TAK łamiący `sprawdz_sl_tp` → zamieniany na NIE z uwagą,
-5. ważny TAK bez skali → skala 100.
+4. pewność przycinana do 0–100,
+5. głos TAK łamiący `sprawdz_sl_tp` → zamieniany na NIE z uwagą, a pewność ustawiana na `None`
+   (dotyczyła TAK, więc nie może zawyżać statystyk głosów NIE),
+6. ważny TAK bez skali → skala 100.
 
 **Zwraca (węzeł):** `{"opinie": {id_tradera: opinia}}` — scalane reducerem w stanie.
 Nazwy bloków danych sprawdzane już przy tworzeniu węzła.
@@ -122,7 +125,7 @@ Krawędź warunkowa: `"head_trader"` przy TAK, `"koniec"` przy NIE.
 ## `lawa/head_trader.py`
 
 ### `_formatuj_opinie(stan) -> str`
-Lista opinii wszystkich traderów (także NIE, z uzasadnieniem) dla promptu Head Tradera.
+Lista opinii wszystkich traderów (także NIE, z deklarowaną pewnością i uzasadnieniem) dla promptu Head Tradera.
 
 ### `_prompt(stan, cena, atr, koszt) -> str`
 Wynik głosowania, opinie, zakres propozycji SL/TP, reguły i polecenie wyboru wewnątrz zakresu.

@@ -27,6 +27,8 @@ def _prompt_systemowy(trader: KonfiguracjaTradera) -> str:
     Skala to NIE procent budżetu — wielkość pełnej pozycji wylicza Risk Manager,
     a ty decydujesz, jaką jej część otworzyć: 100 = pełna (pełne przekonanie),
     50 = połowa, 25 = ćwierć.
+    Przy każdym głosie podaj też pewność 0–100 (jak bardzo jesteś pewien TAK albo NIE).
+    Trafność jest liczona osobno dla każdego poziomu pewności — zawyżanie pewności widać w statystykach.
     """
 
 
@@ -49,6 +51,7 @@ def _opinia(trader: KonfiguracjaTradera, **pola: Any) -> Dict[str, Any]:
         "stop_loss": None,
         "take_profit": None,
         "wielkosc_pozycji_procent": None,
+        "pewnosc": None,
         "uwagi": [],
         **pola,
     }
@@ -78,10 +81,12 @@ def zbuduj_wezel_tradera(trader: KonfiguracjaTradera) -> Callable[[AktualnyStan]
             return {"opinie": {trader.id: _opinia(trader, uwagi=[f"błąd wywołania modelu: {blad}"])}}
 
         opinia = _opinia(trader, **odpowiedz.model_dump())
+        opinia["pewnosc"] = min(max(float(opinia["pewnosc"]), 0.0), 100.0)
         if opinia["glos"] == "TAK":
             bledy = sprawdz_sl_tp(cena, opinia["stop_loss"], opinia["take_profit"], atr, koszt)
             if bledy:
                 opinia["glos"] = "NIE"
+                opinia["pewnosc"] = None  # pewność dotyczyła TAK — po zamianie na NIE nie ma sensu
                 opinia["uwagi"] = ["głos TAK unieważniony (zamieniony na NIE): " + "; ".join(bledy)]
             elif opinia["wielkosc_pozycji_procent"] is None:
                 opinia["wielkosc_pozycji_procent"] = 100.0

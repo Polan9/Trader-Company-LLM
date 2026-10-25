@@ -9,6 +9,8 @@ Same stałe, bez funkcji. Najważniejsze grupy:
 | Ścieżki | `KATALOG_PROJEKTU`, `PLIK_ENV`, `PLIK_STANU`, `PLIK_KONFIGURACJI_LAWY` | pliki projektu |
 | | `KATALOG_DANYCH` | katalog bazy i logów; nadpisywany zmienną środowiskową `TRADER_KATALOG_DANYCH` (na Raspberry Pi — katalog na SSD) |
 | | `PLIK_BAZY`, `KATALOG_LOGOW` | `trader.db` i `logi/` w `KATALOG_DANYCH` |
+| Interfejs | `API_HOST`, `API_PORT` | adres serwera interfejsu (domyślnie `127.0.0.1:8000`; zmienne `TRADER_API_HOST` / `TRADER_API_PORT`) |
+| | `KATALOG_INTERFEJSU` | zbudowany frontend `interfejs/dist`, serwowany przez API |
 | Tryb | `TRYB` | `symulacja` / `testnet` / `realny` — na razie zlecenia nie są składane |
 | Rynek | `SYMBOL`, `INTERWAL`, `BUDZET_POCZATKOWY` | BTC/USDT, 1h, 1000 USD |
 | Koszty | `PROWIZJA_STRONA_PROCENT`, `POSLIZG_STRONA_PROCENT` | założenia — do kalibracji po żywym teście |

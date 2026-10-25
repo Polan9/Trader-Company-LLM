@@ -1,170 +1,192 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
-import { Billboard, Float, OrbitControls, Text } from "@react-three/drei";
-import { api, Opinia } from "../api";
+import { CameraControls } from "@react-three/drei";
+import { api, SzczegolyIteracji } from "../api";
+import Biuro, { Wybor } from "../biuro/Biuro";
+import { uzyjOdtwarzania, zbudujKroki } from "../biuro/odtwarzanie";
+import { WIDOKI } from "../biuro/uklad";
+import { cena, liczbaR, usd, zakresSwiecy } from "../formaty";
 import { uzyjDanych } from "../uzyjDanych";
 
-// Wymiary makiety (jednostki sceny ≈ metry)
-const SALA = 16; // główny pokój: kwadrat SALA × SALA, środek w (0, 0)
-const POKOJ = SALA / 2; // dwa pokoje po prawej: każdy SALA/2 × SALA/2
-const WYSOKOSC_SCIANY = 1.2; // niskie ściany — widok jak w makiecie
-const STOL = { polosX: 4.2, polosZ: 2.2 };
-const MIEJSCA = { polosX: 5.6, polosZ: 3.6 };
+const ODSWIEZANIE_STANU_MS = 15_000; // jak szybko zauważamy nową iterację
+const KLUCZ_AUTO = "trader-company:auto-odtwarzanie";
 
-const KOLOR = { tak: "#26a69a", nie: "#ef5350", brak: "#6b7a90", nieaktywny: "#3a4558" };
-
-interface Osoba {
-  id: string;
-  nazwa: string;
-  aktywny: boolean;
-  glosy: { symbol: string; glos: string }[];
-  opinie: Opinia[];
+function czytajAuto(): boolean {
+  try {
+    return localStorage.getItem(KLUCZ_AUTO) !== "nie";
+  } catch {
+    return true; // tryb prywatny / zablokowana pamięć — domyślnie włączone
+  }
 }
 
-/** Zakładka Preview — makieta biura 3D. Etap 1: układ pokoi i ostatnie głosy; animacje w kolejnych etapach. */
+/** Zakładka Preview — makieta biura 3D z odtwarzaniem iteracji; nowa iteracja odtwarza się sama. */
 export default function Podglad() {
   const { dane: lawa } = uzyjDanych(api.lawa);
-  const { dane: stan } = uzyjDanych(api.stan);
+  const { dane: stan } = uzyjDanych(api.stan, [], ODSWIEZANIE_STANU_MS);
   const idIteracji = stan?.ostatnia_iteracja_ms ?? null;
-  const { dane: iteracja } = uzyjDanych(
-    () => (idIteracji ? api.iteracja(idIteracji) : Promise.resolve(null)),
-    [idIteracji],
+  const kompletna = stan?.ostatnia_iteracja_kompletna ?? false;
+  // Iteracja pobierana razem z informacją, czy w chwili pobrania była już kompletna
+  const { dane: paczka } = uzyjDanych<{ iteracja: SzczegolyIteracji; kompletna: boolean } | null>(
+    () => (idIteracji ? api.iteracja(idIteracji).then((iteracja) => ({ iteracja, kompletna })) : Promise.resolve(null)),
+    [idIteracji, kompletna],
   );
-  const [wybrana, ustawWybrana] = useState<Osoba | null>(null);
+  const iteracja = paczka?.iteracja ?? null;
+  const kroki = useMemo(() => (iteracja ? zbudujKroki(iteracja) : []), [iteracja]);
+  const odtwarzanie = uzyjOdtwarzania(kroki);
+  const [wybor, ustawWybor] = useState<Wybor | null>(null);
+  const [auto, ustawAuto] = useState(czytajAuto);
+  const ostatnioOdtworzona = useRef<number | null>(null);
+  const kamera = useRef<CameraControls>(null);
 
-  const osoby = useMemo<Osoba[]>(() => {
-    if (!lawa) return [];
-    return lawa.traderzy.map((t) => {
-      const opinie = (iteracja?.rundy ?? []).flatMap((r) => r.opinie.filter((o) => o.trader_id === t.id));
-      const glosy = (iteracja?.rundy ?? []).flatMap((r) =>
-        r.opinie.filter((o) => o.trader_id === t.id).map((o) => ({ symbol: r.symbol, glos: o.glos })),
-      );
-      return { id: t.id, nazwa: t.nazwa, aktywny: t.aktywny, glosy, opinie };
-    });
-  }, [lawa, iteracja]);
+  const ustawWidok = (klucz: string) => {
+    const w = WIDOKI[klucz];
+    kamera.current?.setLookAt(...w.pozycja, ...w.cel, true);
+  };
+
+  const przelaczAuto = () => {
+    ustawAuto(!auto);
+    try {
+      localStorage.setItem(KLUCZ_AUTO, auto ? "nie" : "tak");
+    } catch {
+      /* brak pamięci przeglądarki — ustawienie działa do odświeżenia strony */
+    }
+  };
+
+  // Nowa, kompletna iteracja → odtwórz automatycznie. Przy pierwszym wejściu na stronę tylko zapamiętujemy.
+  useEffect(() => {
+    if (!paczka?.kompletna) return;
+    const id = paczka.iteracja.id;
+    if (ostatnioOdtworzona.current === null) {
+      ostatnioOdtworzona.current = id;
+      return;
+    }
+    if (id === ostatnioOdtworzona.current) return;
+    ostatnioOdtworzona.current = id;
+    if (auto) {
+      odtwarzanie.graj();
+      ustawWidok("ogolny");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paczka]);
 
   return (
     <div className="podglad">
-      <Canvas camera={{ position: [14, 16, 20], fov: 45 }} shadows>
+      <Canvas shadows dpr={[1, 2]} camera={{ position: WIDOKI.ogolny.pozycja, fov: 45 }}
+        onPointerMissed={() => ustawWybor(null)}>
         <color attach="background" args={["#0b1220"]} />
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 20, 10]} intensity={1.1} castShadow />
-        <Float speed={1} rotationIntensity={0.05} floatIntensity={0.3}>
-          <group position={[-POKOJ / 2, 0, 0]}>
-            <Pokoj szerokosc={SALA} glebokosc={SALA} pozycja={[0, 0, 0]} kolor="#1b2638" podpis="Trading room" />
-            <StolOwalny />
-            {osoby.map((o, i) => (
-              <MiejsceTradera key={o.id} osoba={o} kat={(i / osoby.length) * Math.PI * 2} onWybierz={() => ustawWybrana(o)} />
-            ))}
-            <Pokoj szerokosc={POKOJ} glebokosc={POKOJ} pozycja={[SALA / 2 + POKOJ / 2, 0, -POKOJ / 2]} kolor="#22304a"
-              podpis={`Head Trader${lawa ? ` (${lawa.head_trader.model})` : ""}`} />
-            <Postac pozycja={[SALA / 2 + POKOJ / 2, 0, -POKOJ / 2]} kolor="#f5c542" podpis="Head Trader" />
-            <Pokoj szerokosc={POKOJ} glebokosc={POKOJ} pozycja={[SALA / 2 + POKOJ / 2, 0, POKOJ / 2]} kolor="#1f2c42" podpis="Staff" />
-            {["Risk Manager", "Screener", "Researcher", "Execution"].map((nazwa, i) => (
-              <Postac key={nazwa} pozycja={[SALA / 2 + 2 + (i % 2) * 4, 0, POKOJ / 2 - 2 + Math.floor(i / 2) * 4]}
-                kolor="#8fa3c0" podpis={nazwa} />
-            ))}
-          </group>
-        </Float>
-        <OrbitControls makeDefault enableDamping maxPolarAngle={Math.PI / 2.2} minDistance={8} maxDistance={60} />
+        <hemisphereLight args={["#e8f0ff", "#3a4150", 1.1]} />
+        <directionalLight position={[12, 22, 14]} intensity={1.8} castShadow shadow-mapSize={[2048, 2048]}
+          shadow-camera-left={-20} shadow-camera-right={20} shadow-camera-top={20} shadow-camera-bottom={-20} />
+        <Biuro lawa={lawa} stan={stan} iteracja={iteracja} kroki={kroki} indeks={odtwarzanie.indeks} onWybierz={ustawWybor} />
+        <CameraControls ref={kamera} makeDefault minDistance={6} maxDistance={70} maxPolarAngle={Math.PI / 2.15} />
       </Canvas>
 
-      {wybrana && (
-        <div className="panel-osoby karta">
-          <button className="zamknij" onClick={() => ustawWybrana(null)}>×</button>
-          <h3>{wybrana.nazwa}</h3>
-          {!wybrana.aktywny && <div className="przygaszony">Inactive (news module not ready yet)</div>}
-          {wybrana.opinie.length === 0 && wybrana.aktywny && <div className="przygaszony">No votes in the last iteration.</div>}
-          {wybrana.opinie.map((o, i) => (
-            <div key={i} className="opinia-krotka">
-              <b className={o.glos === "TAK" ? "plus" : "minus"}>{wybrana.glosy[i]?.symbol}: {o.glos === "TAK" ? "YES" : "NO"}</b>
-              <p>{o.uzasadnienie}</p>
-            </div>
-          ))}
+      <div className="podglad-przyciski">
+        {Object.entries(WIDOKI).map(([klucz, w]) => (
+          <button key={klucz} className="zakladka" onClick={() => ustawWidok(klucz)}>{w.etykieta}</button>
+        ))}
+        {odtwarzanie.indeks === null ? (
+          <button className="zakladka aktywna" disabled={!iteracja} onClick={() => { odtwarzanie.graj(); ustawWidok("ogolny"); }}>
+            ▶ Replay last iteration
+          </button>
+        ) : (
+          <button className="zakladka aktywna" onClick={odtwarzanie.zatrzymaj}>
+            ■ Stop ({odtwarzanie.indeks + 1}/{odtwarzanie.liczbaKrokow})
+          </button>
+        )}
+        <button className={auto ? "zakladka aktywna" : "zakladka"} onClick={przelaczAuto}
+          title="Play each new iteration automatically when the simulator finishes it">
+          Auto-replay: {auto ? "on" : "off"}
+        </button>
+      </div>
+
+      {iteracja && (
+        <div className="podglad-info przygaszony">
+          {odtwarzanie.indeks === null ? "Last" : "Replaying"} iteration {zakresSwiecy(iteracja.czas_swiecy)}
+          {!kompletna && " · simulator is still working on it…"}
         </div>
       )}
-      <div className="podpowiedz przygaszony">Drag to rotate · scroll / pinch to zoom · right-drag to pan · click a trader</div>
+
+      {wybor && <PanelWyboru wybor={wybor} iteracja={iteracja} onZamknij={() => ustawWybor(null)}
+        nazwaTradera={(id) => lawa?.traderzy.find((t) => t.id === id)?.nazwa ?? id} />}
+      <div className="podpowiedz przygaszony">Drag to rotate · scroll / pinch to zoom · right-drag / two fingers to pan · click a person</div>
     </div>
   );
 }
 
-function Pokoj({ szerokosc, glebokosc, pozycja, kolor, podpis }:
-  { szerokosc: number; glebokosc: number; pozycja: [number, number, number]; kolor: string; podpis: string }) {
-  const grubosc = 0.15;
-  const sciany: [number, number, number, number, number][] = [
-    // [x, z, szerokość, głębokość] — cztery niskie ściany
-    [0, -glebokosc / 2, szerokosc, grubosc, 0],
-    [0, glebokosc / 2, szerokosc, grubosc, 0],
-    [-szerokosc / 2, 0, grubosc, glebokosc, 0],
-    [szerokosc / 2, 0, grubosc, glebokosc, 0],
-  ];
-  return (
-    <group position={pozycja}>
-      <mesh receiveShadow position={[0, -0.05, 0]}>
-        <boxGeometry args={[szerokosc, 0.1, glebokosc]} />
-        <meshStandardMaterial color={kolor} />
-      </mesh>
-      {sciany.map(([x, z, w, d], i) => (
-        <mesh key={i} position={[x, WYSOKOSC_SCIANY / 2, z]} castShadow>
-          <boxGeometry args={[w, WYSOKOSC_SCIANY, d]} />
-          <meshStandardMaterial color="#2d3b55" transparent opacity={0.85} />
-        </mesh>
-      ))}
-      <Text position={[0, 0.02, -glebokosc / 2 + 0.8]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.6} color="#a8b3c7">
-        {podpis}
-      </Text>
-    </group>
-  );
-}
+function PanelWyboru({ wybor, iteracja, onZamknij, nazwaTradera }:
+  { wybor: Wybor; iteracja: SzczegolyIteracji | null; onZamknij: () => void; nazwaTradera: (id: string) => string }) {
+  const rundy = (iteracja?.rundy ?? []).filter((r) => !r.pominieta);
+  let tytul = "";
+  let tresc: JSX.Element;
 
-function StolOwalny() {
-  return (
-    <group>
-      <mesh position={[0, 0.75, 0]} scale={[STOL.polosX, 1, STOL.polosZ]} castShadow receiveShadow>
-        <cylinderGeometry args={[1, 1, 0.12, 64]} />
-        <meshStandardMaterial color="#6d4c33" />
-      </mesh>
-      <mesh position={[0, 0.35, 0]}>
-        <cylinderGeometry args={[0.4, 0.6, 0.7, 24]} />
-        <meshStandardMaterial color="#4a3423" />
-      </mesh>
-    </group>
-  );
-}
+  if (wybor.typ === "trader") {
+    tytul = nazwaTradera(wybor.id);
+    const opinie = rundy.flatMap((r) => r.opinie.filter((o) => o.trader_id === wybor.id).map((o) => ({ r, o })));
+    tresc = opinie.length === 0 ? <div className="przygaszony">No votes in the last iteration (inactive or skipped).</div> : (
+      <>
+        {opinie.map(({ r, o }) => {
+          const ocena = r.oceny.find((x) => x.kto === o.trader_id);
+          return (
+            <div key={r.id} className="opinia-krotka">
+              <b className={o.glos === "TAK" ? "plus" : "minus"}>{r.symbol}: {o.glos === "TAK" ? "YES" : "NO"}</b>
+              {o.pewnosc !== null && <span className="przygaszony"> · confidence {o.pewnosc.toFixed(0)}</span>}
+              {o.glos === "TAK" && <div className="przygaszony">SL {cena(o.stop_loss)} · TP {cena(o.take_profit)} · size {o.skala_pozycji}%
+                {ocena && <> · {ocena.status === "zamknieta" ? `${ocena.powod} ${liczbaR(ocena.wynik_r)}` : "open"}</>}</div>}
+              <p>{o.uzasadnienie}</p>
+              {o.uwagi.map((u) => <div key={u} className="uwaga">⚠ {u}</div>)}
+            </div>
+          );
+        })}
+      </>
+    );
+  } else if (wybor.typ === "head_trader") {
+    tytul = "Head Trader";
+    const zDecyzja = rundy.filter((r) => r.head_trader?.stop_loss);
+    tresc = zDecyzja.length === 0
+      ? <div className="przygaszony">Not called in the last iteration — the bench had no YES majority.</div>
+      : <>{zDecyzja.map((r) => (
+        <div key={r.id} className="opinia-krotka">
+          <b>{r.symbol}</b>: SL {cena(r.head_trader!.stop_loss)} · TP {cena(r.head_trader!.take_profit)} ({r.head_trader!.zrodlo})
+          <p>{r.head_trader!.uzasadnienie}</p>
+        </div>))}</>;
+  } else if (wybor.rola === "screener") {
+    tytul = "Screener";
+    tresc = iteracja?.screener ? (
+      <>
+        <table>
+          <thead><tr><th>#</th><th>Pair</th><th>Cost/ATR</th><th>ATR</th></tr></thead>
+          <tbody>{iteracja.screener.ranking.map((p, i) => (
+            <tr key={p.symbol}><td>{i + 1}</td><td>{p.symbol}</td><td>{p.koszt_do_atr.toFixed(1)}%</td><td>{p.atr_procent.toFixed(2)}%</td></tr>
+          ))}</tbody>
+        </table>
+        <div className="przygaszony">Rejected: {iteracja.screener.odrzucone.length} pairs</div>
+      </>
+    ) : <div className="przygaszony">No screener data.</div>;
+  } else if (wybor.rola === "risk_manager") {
+    tytul = "Risk Manager";
+    const sprawdzone = rundy.filter((r) => r.decyzja === "TAK");
+    tresc = sprawdzone.length === 0 ? <div className="przygaszony">Nothing to check — no YES majority in the last iteration.</div> : (
+      <>{sprawdzone.map((r) => {
+        const d = r.decyzja_koncowa as { otworz_pozycje?: boolean; wielkosc_usd?: number; ryzyko_usd?: number; powody?: string[] } | null;
+        return <div key={r.id} className="opinia-krotka"><b>{r.symbol}</b>: {d?.otworz_pozycje
+          ? <span className="plus">approved {usd(d.wielkosc_usd)} (risk {usd(d.ryzyko_usd)})</span>
+          : <span className="minus">{d?.powody?.join("; ")}</span>}</div>;
+      })}</>
+    );
+  } else if (wybor.rola === "execution") {
+    tytul = "Execution";
+    tresc = <div className="przygaszony">Simulation mode — orders are not sent to the exchange yet.</div>;
+  } else {
+    tytul = "Researcher";
+    tresc = <div className="przygaszony">News module (RSS, Fear & Greed, LLM rating) is not implemented yet.</div>;
+  }
 
-function MiejsceTradera({ osoba, kat, onWybierz }: { osoba: Osoba; kat: number; onWybierz: () => void }) {
-  const x = Math.cos(kat) * MIEJSCA.polosX;
-  const z = Math.sin(kat) * MIEJSCA.polosZ;
-  const tak = osoba.glosy.filter((g) => g.glos === "TAK").length;
-  const kolor = !osoba.aktywny ? KOLOR.nieaktywny : osoba.glosy.length === 0 ? KOLOR.brak : tak > 0 ? KOLOR.tak : KOLOR.nie;
-  const podsumowanie = osoba.glosy.length ? `${tak} YES / ${osoba.glosy.length - tak} NO` : osoba.aktywny ? "—" : "inactive";
   return (
-    <group position={[x, 0, z]} rotation={[0, -kat - Math.PI / 2, 0]}>
-      <mesh position={[0, 0.25, 0.4]}>
-        <boxGeometry args={[0.8, 0.5, 0.8]} />
-        <meshStandardMaterial color="#39465e" />
-      </mesh>
-      <Postac pozycja={[0, 0.3, 0.4]} kolor={kolor} podpis={`${osoba.nazwa}\n${podsumowanie}`} onKlik={onWybierz} />
-    </group>
-  );
-}
-
-function Postac({ pozycja, kolor, podpis, onKlik }:
-  { pozycja: [number, number, number]; kolor: string; podpis: string; onKlik?: () => void }) {
-  const [najechana, ustawNajechana] = useState(false);
-  return (
-    <group position={pozycja}>
-      <mesh position={[0, 0.9, 0]} castShadow
-        onClick={(e) => { e.stopPropagation(); onKlik?.(); }}
-        onPointerOver={() => ustawNajechana(true)} onPointerOut={() => ustawNajechana(false)}>
-        <capsuleGeometry args={[0.35, 0.8, 8, 16]} />
-        <meshStandardMaterial color={kolor} emissive={najechana ? kolor : "#000000"} emissiveIntensity={0.4} />
-      </mesh>
-      <Billboard position={[0, 2.3, 0]}>
-        <Text fontSize={0.32} color="#e6edf7" anchorY="bottom" textAlign="center" maxWidth={4} outlineWidth={0.02} outlineColor="#0b1220">
-          {podpis}
-        </Text>
-      </Billboard>
-    </group>
+    <div className="panel-osoby karta">
+      <button className="zamknij" onClick={onZamknij}>×</button>
+      <h3>{tytul}</h3>
+      {tresc}
+    </div>
   );
 }

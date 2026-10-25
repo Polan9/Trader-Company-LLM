@@ -19,7 +19,8 @@ def _opinie(opinie: Dict[str, Dict[str, Any]]) -> List[str]:
         return ["(brak)"]
     linie = []
     for id_, opinia in opinie.items():
-        linie.append(f"[{id_}] {opinia['nazwa']} ({opinia['model']}): {opinia['glos']}")
+        pewnosc = f" (pewność {opinia['pewnosc']:.0f})" if opinia.get("pewnosc") is not None else ""
+        linie.append(f"[{id_}] {opinia['nazwa']} ({opinia['model']}): {opinia['glos']}{pewnosc}")
         if opinia["glos"] == "TAK":
             linie.append(
                 f"  SL: {opinia['stop_loss']} | TP: {opinia['take_profit']} | skala pozycji: {opinia['wielkosc_pozycji_procent']}%"

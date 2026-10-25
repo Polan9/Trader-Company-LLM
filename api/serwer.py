@@ -14,13 +14,14 @@ from fastapi.staticfiles import StaticFiles
 
 from dane.gielda import pobierz_swiece_od
 from konfiguracja.lawa import wczytaj_konfiguracje_lawy
-from konfiguracja.ustawienia import INTERWAL, KATALOG_INTERFEJSU, PLIK_BAZY
+from konfiguracja.ustawienia import INTERWAL, KATALOG_INTERFEJSU, MAKS_PAR_NA_SWIECE, PLIK_BAZY
 from symulacja.raport import (
     karta_traderow,
     kup_i_trzymaj_btc,
     kup_i_trzymaj_pary,
     maks_spadek_procent,
     statystyki_transakcji,
+    trafnosc_wg_pewnosci,
 )
 from zapis import baza, odczyt
 
@@ -60,7 +61,13 @@ def polaczenie_bazy() -> Iterator[sqlite3.Connection]:
 
 @aplikacja.get("/api/stan")
 def stan(polaczenie: sqlite3.Connection = Depends(polaczenie_bazy)):
-    return do_json(odczyt.stan_portfela(polaczenie))
+    wynik = odczyt.stan_portfela(polaczenie)
+    ostatnia = wynik["ostatnia_iteracja_ms"]
+    # Interfejs odtwarza nową iterację dopiero, gdy symulator skończy ją zapisywać
+    wynik["ostatnia_iteracja_kompletna"] = (
+        odczyt.iteracja_kompletna(polaczenie, ostatnia, MAKS_PAR_NA_SWIECE) if ostatnia else False
+    )
+    return do_json(wynik)
 
 
 @aplikacja.get("/api/iteracje")
@@ -109,6 +116,7 @@ def statystyki(polaczenie: sqlite3.Connection = Depends(polaczenie_bazy)):
         "kup_i_trzymaj_btc": btc,
         "kup_i_trzymaj_pary": pary,
         "karta_traderow": karta_traderow(polaczenie),
+        "trafnosc_wg_pewnosci": trafnosc_wg_pewnosci(polaczenie),
         "koszt_llm_dziennie": odczyt.koszt_llm_dziennie(polaczenie),
     })
 

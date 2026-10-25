@@ -152,16 +152,29 @@ godziny) i podsumowanie: liczba referencji / głosów TAK, średni niezrealizowa
 ### `_linia_statystyk(nazwa, statystyki) -> str`
 Jedna linia raportu ze statystykami.
 
+### `opinie_z_ocenami(polaczenie) -> DataFrame`
+Każda opinia (z pewnością) połączona z wynikiem: głos TAK → własna transakcja hipotetyczna tradera,
+głos NIE → referencja z tej rundy. Kolumny dodatkowe: `rozstrzygnieta`, `trafna`, `wynik_r`.
+Wspólna podstawa karty traderów i trafności wg pewności.
+
 ### `karta_traderow(polaczenie) -> DataFrame`
 **Co robi:** trafność każdego tradera.
 **Jak działa:** głos **TAK trafny**, gdy jego własna transakcja hipotetyczna zarobiła;
 głos **NIE trafny**, gdy transakcja referencyjna z tej rundy straciła. Liczone tylko
-rozstrzygnięte. Kolumny: głosy, % TAK, rozstrzygnięte, trafność (ogółem / TAK / NIE), średni R z TAK.
+rozstrzygnięte. Kolumny: głosy, % TAK, rozstrzygnięte, trafność (ogółem / TAK / NIE), średni R z TAK,
+średnia deklarowana pewność.
+
+### `PRZEDZIALY_PEWNOSCI` i `trafnosc_wg_pewnosci(polaczenie) -> DataFrame`
+**Co robi:** sprawdza, czy deklarowana pewność coś znaczy — trafność rozstrzygniętych głosów TAK
+i NIE osobno w przedziałach pewności 0–49, 50–69, 70–84, 85–100.
+**Kolumny:** `glos`, `przedzial`, `liczba`, `trafnosc_procent`, `sredni_r` (dla NIE: średni wynik
+referencji — ujemny = NIE uchroniło przed stratą). Głosy bez pewności (sprzed 2026-10-25,
+unieważnione TAK) są pomijane. Podstawa decyzji o ewentualnym „force” (patrz CLAUDE.md).
 
 ### `zbuduj_raport(polaczenie) -> str`
 Pełny raport: okres i rundy, portfel (budżet, koszt LLM, wynik po LLM), transakcje ławy
 (skuteczność, R, profit factor, maks. spadek, czas, powody wyjść), strategie odniesienia
 (**zawsze wchodź**, **heurystyka RSI/MACD**, **kup i trzymaj BTC** jako benchmark rynku
 i **kup i trzymaj pary** — średnia i lista per para), **otwarte oceny wycenione na żywo**,
-karta traderów, ostrzeżenie o małej próbie.
+karta traderów, **trafność wg pewności**, ostrzeżenie o małej próbie.
 Gdy giełda jest niedostępna, sekcja „kup i trzymaj” pokazuje komunikat, reszta raportu działa.

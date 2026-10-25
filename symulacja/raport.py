@@ -118,10 +118,14 @@ def _linia_statystyk(nazwa: str, s: dict) -> str:
             f"średnio {s['sredni_r']:+.3f} R | suma {s['suma_r']:+.2f} R | PF {s['profit_factor']:.2f}")
 
 
-def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
-    """Trafność traderów: TAK trafny, gdy własna transakcja zarobiła; NIE trafny, gdy referencja straciła."""
+PRZEDZIALY_PEWNOSCI = [(0, 50, "0–49"), (50, 70, "50–69"), (70, 85, "70–84"), (85, 101, "85–100")]
+
+
+def opinie_z_ocenami(polaczenie: sqlite3.Connection) -> pd.DataFrame:
+    """Każda opinia z wynikiem: TAK → własna transakcja hipotetyczna, NIE → referencja z tej rundy.
+    Kolumny dodatkowe: rozstrzygnieta, trafna, wynik_r (TAK: własny, NIE: referencji)."""
     opinie = baza.tabela_jako_df(polaczenie, """
-        SELECT o.runda_id, o.trader_id, o.nazwa, o.glos,
+        SELECT o.runda_id, o.trader_id, o.nazwa, o.glos, o.pewnosc,
                wlasna.status AS status_wlasnej, wlasna.wynik_r AS wynik_r_wlasny,
                ref.status AS status_ref, ref.wynik_r AS wynik_r_ref
         FROM opinie o
@@ -133,6 +137,36 @@ def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
     tak = opinie["glos"] == "TAK"
     opinie["rozstrzygnieta"] = np.where(tak, opinie["status_wlasnej"] == "zamknieta", opinie["status_ref"] == "zamknieta")
     opinie["trafna"] = np.where(tak, opinie["wynik_r_wlasny"] > 0, opinie["wynik_r_ref"] <= 0)
+    opinie["wynik_r"] = np.where(tak, opinie["wynik_r_wlasny"], opinie["wynik_r_ref"])
+    return opinie
+
+
+def trafnosc_wg_pewnosci(polaczenie: sqlite3.Connection) -> pd.DataFrame:
+    """Czy deklarowana pewność coś znaczy: trafność rozstrzygniętych głosów TAK i NIE w przedziałach pewności.
+    Dla NIE `sredni_r` to średni wynik referencji (ujemny = głos NIE uchronił przed stratą)."""
+    opinie = opinie_z_ocenami(polaczenie)
+    if opinie.empty:
+        return opinie
+    opinie = opinie[opinie["rozstrzygnieta"] & opinie["pewnosc"].notna()]
+    wiersze = []
+    for glos in ("TAK", "NIE"):
+        for od, do, etykieta in PRZEDZIALY_PEWNOSCI:
+            grupa = opinie[(opinie["glos"] == glos) & (opinie["pewnosc"] >= od) & (opinie["pewnosc"] < do)]
+            wiersze.append({
+                "glos": glos,
+                "przedzial": etykieta,
+                "liczba": len(grupa),
+                "trafnosc_procent": grupa["trafna"].mean() * 100 if len(grupa) else np.nan,
+                "sredni_r": grupa["wynik_r"].mean() if len(grupa) else np.nan,
+            })
+    return pd.DataFrame(wiersze)
+
+
+def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
+    """Trafność traderów: TAK trafny, gdy własna transakcja zarobiła; NIE trafny, gdy referencja straciła."""
+    opinie = opinie_z_ocenami(polaczenie)
+    if opinie.empty:
+        return opinie
 
     wiersze = []
     for (trader_id, nazwa), grupa in opinie.groupby(["trader_id", "nazwa"]):
@@ -148,6 +182,7 @@ def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
             "trafnosc_tak_procent": ocenione_tak["trafna"].mean() * 100 if len(ocenione_tak) else np.nan,
             "sredni_r_tak": ocenione_tak["wynik_r_wlasny"].mean() if len(ocenione_tak) else np.nan,
             "trafnosc_nie_procent": ocenione_nie["trafna"].mean() * 100 if len(ocenione_nie) else np.nan,
+            "srednia_pewnosc": grupa["pewnosc"].mean() if grupa["pewnosc"].notna().any() else np.nan,
         })
     return pd.DataFrame(wiersze).sort_values("trafnosc_procent", ascending=False)
 
@@ -231,8 +266,18 @@ def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
             linie.append(
                 f"  {w.trader:<38} głosy {w.glosy:<4} TAK {w.tak_procent:5.1f}% | rozstrzygnięte {w.rozstrzygniete:<4} "
                 f"trafność {p(w.trafnosc_procent)} (TAK {p(w.trafnosc_tak_procent)}, NIE {p(w.trafnosc_nie_procent)}) "
-                f"| śr. R z TAK {p(w.sredni_r_tak, '{:+.3f}')}"
+                f"| śr. R z TAK {p(w.sredni_r_tak, '{:+.3f}')} | śr. pewność {p(w.srednia_pewnosc, '{:4.0f}')}"
             )
+
+    linie += ["", "TRAFNOŚĆ WG PEWNOŚCI (rozstrzygnięte głosy z deklarowaną pewnością; NIE: R referencji)"]
+    wg_pewnosci = trafnosc_wg_pewnosci(polaczenie)
+    if wg_pewnosci.empty or wg_pewnosci["liczba"].sum() == 0:
+        linie.append("  brak rozstrzygniętych głosów z pewnością (pole dodane 2026-10-25)")
+    else:
+        for w in wg_pewnosci.itertuples(index=False):
+            if w.liczba:
+                linie.append(f"  {w.glos:<4} pewność {w.przedzial:<7} n={w.liczba:<4} trafność {w.trafnosc_procent:5.1f}% "
+                             f"| śr. R {w.sredni_r:+.3f}")
 
     liczba = len(zamkniete)
     if liczba < MIN_TRANSAKCJI_DO_WNIOSKOW:
