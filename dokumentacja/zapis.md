@@ -11,7 +11,7 @@ budżet początkowy + suma wyników zamkniętych pozycji (jedno źródło prawdy
 | Tabela | Zawartość |
 |---|---|
 | `portfel` | jeden wiersz: budżet początkowy i data utworzenia |
-| `rundy` | każda runda (także pominięta), unikalna per (para, interwał, świeca); cena, ATR, koszt, decyzja, koszt LLM, szczegóły JSON |
+| `rundy` | każda runda (także pominięta), jedna na świecę; para wybrana przez screener (`BRAK`, gdy żadna nie przeszła); cena, ATR, koszt, decyzja, koszt LLM, szczegóły JSON (z rankingiem screenera) |
 | `opinie` | głos każdego tradera w rundzie: uzasadnienie, SL/TP, skala, uwagi |
 | `oceny` | transakcje hipotetyczne (referencja + głosy TAK) i ich wynik — do karty traderów |
 | `pozycje` | wirtualne pozycje ławy: wejście, SL/TP, wielkość, ryzyko, wynik USD/%/R |
@@ -41,8 +41,9 @@ Budżet początkowy + suma `wynik_usd` zamkniętych pozycji.
 Dla doby UTC: `dzienna_strata_procent` (strata z pozycji zamkniętych dziś, w % aktualnego
 budżetu; zysk = 0) i `transakcje_dzisiaj` (pozycje otwarte dziś). Dane dla Risk Managera.
 
-### `runda_istnieje(polaczenie, symbol, interwal, czas_swiecy) -> bool`
-Czy runda dla tej świecy jest już zapisana (ochrona przed duplikatem po restarcie).
+### `runda_dla_swiecy_istnieje(polaczenie, interwal, czas_swiecy) -> bool`
+Czy dla tej świecy była już runda — **dla dowolnej pary**, bo screener wybiera jedną parę
+na świecę (ochrona przed duplikatem i podwójnym kosztem LLM po restarcie).
 
 ### `zapisz_runde(polaczenie, **pola) -> int`
 Wstawia rundę; uzupełnia wartości domyślne, konwertuje czas i pola JSON. Zwraca id.
@@ -59,11 +60,9 @@ Wstawia transakcję hipotetyczną ze statusem `otwarta`.
 ### `zapisz_pozycje(polaczenie, runda_id, symbol, interwal, czas_wejscia, decyzja) -> int`
 Wstawia wirtualną pozycję z `decyzja_koncowa` Risk Managera.
 
-### `otwarta_pozycja(polaczenie, symbol) -> Row | None`
-Otwarta pozycja na parze (albo brak) — podstawa zasady „maks. 1 pozycja na parę”.
-
 ### `otwarte(polaczenie, tabela) -> list[Row]`
 Otwarte wpisy z `pozycje` albo `oceny` (inne nazwy tabel → błąd, ochrona przed wstrzyknięciem SQL).
+Dla pozycji — podstawa limitu `MAKS_OTWARTYCH_POZYCJI` i listy par pomijanych przez screener.
 
 ### `zamknij(polaczenie, tabela, id_, **wynik)`
 Ustawia status `zamknieta` i pola wyniku (powód, czas i cena wyjścia, wynik %, R, ew. USD).

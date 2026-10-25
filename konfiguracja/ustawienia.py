@@ -35,6 +35,26 @@ TOLERANCJA_ZYSK_DO_RYZYKA = 0.01  # zaokrąglenia cen przez LLM — 1.495 przech
 MIN_SL_ATR = 0.5  # odległość SL od ceny wejścia, w wielokrotnościach ATR
 MAKS_SL_ATR = 3.0
 
+# --- Screener (wybór pary przed zwołaniem ławy) ---
+SCREENER_WLACZONY = True  # False = ława zawsze analizuje SYMBOL
+SCREENER_LICZBA_KANDYDATOW = 30  # najpłynniejsze pary USDT brane pod uwagę
+SCREENER_MIN_WOLUMEN_USDT = 20_000_000  # wolumen 24h
+SCREENER_MAKS_SPREAD_PROCENT = 0.05
+SCREENER_MAKS_KOSZT_DO_ATR = 25.0  # koszt transakcji jako % ATR — analiza: 1h → mediana 23%
+SCREENER_MIN_ATR_PROCENT = 0.15  # poniżej coin zachowuje się jak stablecoin
+SCREENER_OKNO_ATR = 24  # mediana ATR% z ostatnich świec (przy 1h: doba)
+SCREENER_SWIECE = 100  # pobierane na kandydata (rozgrzewka ATR + okno)
+MAKS_OTWARTYCH_POZYCJI = 1  # łącznie, na wszystkich parach (crypto mocno skorelowane)
+# Brak w API Binance pola odróżniającego tokenizowane akcje/złoto — lista ręczna,
+# uzupełniać, gdy w rankingu screenera pojawi się nowy taki token.
+WYKLUCZONE_AKTYWA = {
+    # stablecoiny i aktywa „opakowane”
+    "USDC", "FDUSD", "TUSD", "DAI", "USDP", "BUSD", "USDE", "PYUSD", "USD1", "BFUSD", "XUSD",
+    "EUR", "AEUR", "EURI", "USDS", "RLUSD", "WBTC", "WBETH", "U",
+    # tokenizowane złoto, akcje i ETF-y
+    "PAXG", "XAUT", "SNDKB", "SOXLB", "CRCLB", "SPCXB", "MUB", "MSTRB",
+}
+
 # --- Symulator ---
 OPOZNIENIE_PO_ZAMKNIECIU_S = 20  # odczekanie po zamknięciu świecy, aż giełda ją opublikuje
 PROBY_CYKLU = 3  # ile razy ponowić cykl po błędzie (sieć, API)

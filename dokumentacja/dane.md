@@ -1,6 +1,6 @@
 # `dane/gielda.py` — dane z Binance
 
-### `_tylko_zamkniete_swiece(surowe_swiece, interwal, teraz_ms) -> list`
+### `tylko_zamkniete_swiece(surowe_swiece, interwal, teraz_ms) -> list`
 **Co robi:** odrzuca świecę, która jeszcze trwa.
 **Jak działa:** świeca jest zamknięta, gdy `czas_otwarcia + długość_interwału <= teraz`.
 Giełda zawsze zwraca trwającą świecę jako ostatnią — liczenie z niej wskaźników

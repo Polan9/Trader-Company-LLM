@@ -4,12 +4,13 @@ from langgraph.graph import END, START, StateGraph
 
 from dane.gielda import pobierz_dane
 from konfiguracja.lawa import KonfiguracjaLawy, wczytaj_konfiguracje_lawy
-from konfiguracja.ustawienia import BUDZET_POCZATKOWY, INTERWAL, PLIK_ENV, SYMBOL
+from konfiguracja.ustawienia import BUDZET_POCZATKOWY, INTERWAL, PLIK_ENV, SCREENER_WLACZONY, SYMBOL
 from lawa.glosowanie import glosowanie, po_glosowaniu
 from lawa.head_trader import zbuduj_wezel_head_tradera
 from lawa.llm import pobierz_i_wyczysc_zuzycie
 from lawa.risk_manager import risk_manager
 from lawa.traderzy import zbuduj_wezel_tradera
+from screener.wybor import formatuj_ranking, wybierz_pare
 from stan import AktualnyStan
 from wskazniki.analiza_techniczna import oblicz_analize_techniczna
 from zapis.plik_stanu import formatuj_zuzycie, zapisz_stan
@@ -63,8 +64,16 @@ def stan_poczatkowy() -> AktualnyStan:
 if __name__ == "__main__":
     load_dotenv(PLIK_ENV)
 
+    stan = stan_poczatkowy()
+    if SCREENER_WLACZONY:
+        wynik_screenera = wybierz_pare(INTERWAL)
+        print(formatuj_ranking(wynik_screenera))
+        if wynik_screenera["symbol"] is None:
+            raise SystemExit("Screener: żadna para nie spełnia kryteriów — ława nie jest zwoływana.")
+        stan["symbol"] = wynik_screenera["symbol"]
+
     aplikacja = zbuduj_graf(wczytaj_konfiguracje_lawy())
-    wynik = aplikacja.invoke(stan_poczatkowy())
+    wynik = aplikacja.invoke(stan)
     zuzycie = pobierz_i_wyczysc_zuzycie()
     print(formatuj_zuzycie(zuzycie))
     zapisz_stan(wynik, zuzycie)

@@ -5,7 +5,7 @@ import logging
 import sqlite3
 import time
 from logging.handlers import RotatingFileHandler
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import ccxt
 import pandas as pd
@@ -15,18 +15,23 @@ from konfiguracja.ustawienia import (
     INTERWAL_ROZSTRZYGANIA,
     KATALOG_LOGOW,
     MAKS_CZAS_POZYCJI_SWIEC,
+    MAKS_OTWARTYCH_POZYCJI,
     OPOZNIENIE_PO_ZAMKNIECIU_S,
     PROBY_CYKLU,
     PRZERWA_PO_BLEDZIE_S,
     REFERENCJA_SL_ATR,
+    SCREENER_WLACZONY,
 )
 from lawa.llm import pobierz_i_wyczysc_zuzycie
 from lawa.sl_tp import koszt_transakcji_procent, minimalny_take_profit
+from screener.wybor import formatuj_ranking, wybierz_pare
 from symulacja.ocena import kolejnosc_w_swiecach, ocen_transakcje, wynik_netto
 from zapis import baza
 from zapis.plik_stanu import zapisz_stan
 
 log = logging.getLogger("symulacja")
+
+BRAK_PARY = "BRAK"  # symbol rundy pominiętej, gdy screener nic nie wybrał
 
 
 def skonfiguruj_logi() -> None:
@@ -105,8 +110,17 @@ def rozlicz_otwarte(polaczenie: sqlite3.Connection) -> List[Dict[str, Any]]:
 
 # --- Runda ławy ---
 
+def _skrot_screenera(wynik_screenera: Dict[str, Any], liczba: int = 10) -> Dict[str, Any]:
+    """Do zapisu w bazie: wybrana para, czołówka rankingu i powody odrzuceń."""
+    return {
+        "symbol": wynik_screenera["symbol"],
+        "ranking": wynik_screenera["ranking"][:liczba],
+        "odrzucone": [{"symbol": o["symbol"], "odrzucenia": o["odrzucenia"]} for o in wynik_screenera["odrzucone"]],
+    }
+
+
 def _zapisz_wynik_rundy(polaczenie: sqlite3.Connection, wynik: Dict[str, Any], zuzycie: List[Dict[str, Any]],
-                        czas_swiecy: pd.Timestamp) -> int:
+                        czas_swiecy: pd.Timestamp, wynik_screenera: Optional[Dict[str, Any]] = None) -> int:
     symbol, interwal = wynik["symbol"], wynik["interwal"]
     analiza = wynik["analiza_techniczna"]
     decyzja = wynik["decyzja_koncowa"]
@@ -130,6 +144,7 @@ def _zapisz_wynik_rundy(polaczenie: sqlite3.Connection, wynik: Dict[str, Any], z
                 "decyzja_koncowa": decyzja,
                 "aktualne_dane": wynik["aktualne_dane"],
                 "analiza_techniczna": analiza,
+                "screener": _skrot_screenera(wynik_screenera) if wynik_screenera else None,
             },
         )
         baza.zapisz_opinie(polaczenie, runda_id, wynik["opinie"])
@@ -154,27 +169,42 @@ def _zapisz_wynik_rundy(polaczenie: sqlite3.Connection, wynik: Dict[str, Any], z
 
 def wykonaj_cykl(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str, Any],
                  teraz: pd.Timestamp = None) -> Dict[str, Any]:
-    """Jeden cykl: rozliczenie otwartych → (ewentualnie) runda ławy → zapis. Zwraca podsumowanie."""
+    """Jeden cykl: rozliczenie otwartych → screener → (ewentualnie) runda ławy → zapis."""
     teraz = teraz or pd.Timestamp.now(tz="UTC")
-    symbol, interwal = stan_poczatkowy["symbol"], stan_poczatkowy["interwal"]
+    interwal = stan_poczatkowy["interwal"]
     czas_swiecy = ostatnia_zamknieta_swieca(teraz, interwal)
 
     rozlicz_otwarte(polaczenie)
 
-    if baza.runda_istnieje(polaczenie, symbol, interwal, czas_swiecy):
+    if baza.runda_dla_swiecy_istnieje(polaczenie, interwal, czas_swiecy):
         log.info(f"Runda dla świecy {czas_swiecy} już jest w bazie — pomijam.")
         return {"status": "juz_byla", "czas_swiecy": czas_swiecy}
 
-    otwarta = baza.otwarta_pozycja(polaczenie, symbol)
-    if otwarta is not None:
+    otwarte_pozycje = baza.otwarte(polaczenie, "pozycje")
+    if len(otwarte_pozycje) >= MAKS_OTWARTYCH_POZYCJI:
+        numery = ", ".join(f"#{p['id']} {p['symbol']}" for p in otwarte_pozycje)
         with polaczenie:
-            baza.zapisz_runde(polaczenie, symbol=symbol, interwal=interwal, czas_swiecy=czas_swiecy,
-                              pominieta=1, powody=[f"otwarta pozycja #{otwarta['id']}"])
-        log.info(f"Otwarta pozycja #{otwarta['id']} — ława nie jest zwoływana.")
+            baza.zapisz_runde(polaczenie, symbol=otwarte_pozycje[0]["symbol"], interwal=interwal,
+                              czas_swiecy=czas_swiecy, pominieta=1, powody=[f"otwarte pozycje: {numery}"])
+        log.info(f"Limit otwartych pozycji ({numery}) — ława nie jest zwoływana.")
         return {"status": "pominieta", "czas_swiecy": czas_swiecy}
+
+    wynik_screenera = None
+    symbol = stan_poczatkowy["symbol"]
+    if SCREENER_WLACZONY:
+        wynik_screenera = wybierz_pare(interwal, pomin={p["symbol"] for p in otwarte_pozycje})
+        log.info(formatuj_ranking(wynik_screenera, liczba=5))
+        if wynik_screenera["symbol"] is None:
+            with polaczenie:
+                baza.zapisz_runde(polaczenie, symbol=BRAK_PARY, interwal=interwal, czas_swiecy=czas_swiecy,
+                                  pominieta=1, powody=["screener: żadna para nie spełnia kryteriów"],
+                                  szczegoly={"screener": _skrot_screenera(wynik_screenera)})
+            return {"status": "brak_pary", "czas_swiecy": czas_swiecy}
+        symbol = wynik_screenera["symbol"]
 
     stan = {
         **stan_poczatkowy,
+        "symbol": symbol,
         "budzet": baza.aktualny_budzet(polaczenie),
         **baza.liczniki_dzienne(polaczenie, teraz),
     }
@@ -185,13 +215,13 @@ def wykonaj_cykl(polaczenie: sqlite3.Connection, graf, stan_poczatkowy: Dict[str
     czas_z_danych = pd.Timestamp(wynik["analiza_techniczna"]["czas_ostatniej_swiecy"])
     if czas_z_danych != czas_swiecy:
         log.warning(f"Giełda zwróciła świecę {czas_z_danych} zamiast {czas_swiecy} — zapisuję pod czasem z danych.")
-        if baza.runda_istnieje(polaczenie, symbol, interwal, czas_z_danych):
+        if baza.runda_dla_swiecy_istnieje(polaczenie, interwal, czas_z_danych):
             return {"status": "juz_byla", "czas_swiecy": czas_z_danych}
 
-    runda_id = _zapisz_wynik_rundy(polaczenie, wynik, zuzycie, czas_z_danych)
+    runda_id = _zapisz_wynik_rundy(polaczenie, wynik, zuzycie, czas_z_danych, wynik_screenera)
     zapisz_stan(wynik, zuzycie)
     glosowanie = wynik["wynik_glosowania"]
-    log.info(f"Runda #{runda_id} ({czas_z_danych}): {glosowanie['tak']} TAK / {glosowanie['nie']} NIE, "
+    log.info(f"Runda #{runda_id} {symbol} ({czas_z_danych}): {glosowanie['tak']} TAK / {glosowanie['nie']} NIE, "
              f"otwarcie: {wynik['decyzja_koncowa'].get('otworz_pozycje')}, "
              f"koszt LLM ${sum(w['koszt_usd'] or 0 for w in zuzycie):.4f}")
     return {"status": "runda", "runda_id": runda_id, "czas_swiecy": czas_z_danych}

@@ -27,20 +27,29 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 6. **Zapis** — pełny stan rundy (dane, opinie, głosy, decyzja) zapisywany do logu/pliku.
 
 ## Cele na później (backlog)
-- **Screener coinów** — moduł wybierający, które coiny opłaca się danego dnia tradować.
-  Ława analizuje tylko pary wskazane przez screener. Kryteria — patrz
-  „Podjęte decyzje → Interwał i koszty”.
 - **Logika wyjścia z pozycji (pełna)** — na razie wersja minimalna w symulatorze
-  (SL / TP / zamknięcie po `MAKS_CZAS_POZYCJI_SWIEC`, maks. 1 pozycja na parę, ława nie
-  zbiera się przy otwartej pozycji). Do ustalenia: wcześniejsze wyjście decyzją ławy,
+  (SL / TP / zamknięcie po `MAKS_CZAS_POZYCJI_SWIEC`, maks. `MAKS_OTWARTYCH_POZYCJI`
+  otwartych pozycji, ława nie zbiera się po osiągnięciu limitu). Do ustalenia: wcześniejsze wyjście decyzją ławy,
   trailing stop, SL/TP jako zlecenia OCO na giełdzie (przy trybie testnet/realny).
 - **UI (po angielsku)** — m.in. definiowanie ról traderów i zakresu danych, jakie dostają.
 - Futures / short i ewentualnie akcje.
 
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
-- Działanie screenera coinów (częstotliwość, liczba par, kryteria dodatkowe np. siła trendu).
+- Screener: czy dodać kryteria jakościowe (siła trendu, korelacja z BTC) i czy dopuścić
+  kilka otwartych pozycji naraz (`MAKS_OTWARTYCH_POZYCJI` > 1 — crypto są mocno skorelowane).
 
 ## Podjęte decyzje
+
+### Screener (`screener/wybor.py`, opis: `dokumentacja/screener.md`)
+- **Przed każdą rundą** screener wybiera **jedną** parę, o której dyskutuje ława. Kod, bez LLM.
+- Kryteria twarde: kandydaci = 30 najpłynniejszych `*/USDT` spoza `WYKLUCZONE_AKTYWA`
+  i spoza par z otwartą pozycją; wolumen ≥ 20 mln USDT, spread ≤ 0.05%, mediana ATR% (doba)
+  ≥ 0.15%, koszt/ATR ≤ 25%. Ranking: najniższy koszt/ATR.
+- `WYKLUCZONE_AKTYWA` — ręczna lista (API nie odróżnia tokenizowanych akcji/złota);
+  **nie wykluczać po końcówce nazwy** (`BNB`, `ARB` to zwykłe coiny).
+- Pierwszy pomiar (2026-10-25, niedziela): przeszło 5 z 30 par (WLD, ZEC, NEAR, ENA, SUI);
+  BTC odpadł (koszt/ATR 59%), ETH/SOL/XRP ~33–35%.
+- Maks. `MAKS_OTWARTYCH_POZYCJI = 1` łącznie; jedna runda na świecę (dla dowolnej pary).
 
 ### Platforma i baza danych
 - **Docelowo system działa na Raspberry Pi** (4 lub 5, 4 GB RAM wystarczy — ciężka praca
@@ -166,8 +175,9 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   symulator (doba UTC); w pojedynczej rundzie `main.py` startują od zera.
 
 ### Symulator (`python -m symulacja`, raport: `python -m symulacja.raport`)
-- Cykl co godzinę po zamknięciu świecy: rozliczenie otwartych → (jeśli brak otwartej pozycji)
-  runda ławy → zapis w SQLite. Runda unikalna per świeca — restart nie dubluje rund ani kosztów LLM.
+- Cykl co godzinę po zamknięciu świecy: rozliczenie otwartych → (jeśli limit otwartych
+  pozycji nie osiągnięty) screener → runda ławy → zapis w SQLite. Jedna runda na świecę —
+  restart nie dubluje rund ani kosztów LLM.
 - Wejście w świecy **po** decyzji, po cenie `ask`. Rozstrzyganie konserwatywne: luka pod SL →
   wyjście po otwarciu; SL i TP w jednej świecy → świece 1m, remis → SL.
 - **Oceny (transakcje hipotetyczne)**: referencja w każdej rundzie (SL 1×ATR, minimalny TP)
@@ -242,6 +252,7 @@ lawa/risk_manager.py        # weto + wielkość pozycji
 lawa/sl_tp.py               # twarde reguły SL/TP i wyliczanie wielkości pozycji
 lawa/modele.py              # schematy odpowiedzi LLM (pydantic)
 lawa/llm.py                 # jedyne miejsce wywołań LLM (łatwe podmienienie w testach)
+screener/wybor.py           # wybór pary przed rundą (koszt/ATR, wolumen, spread)
 zapis/baza.py               # SQLite (WAL) — jedyne miejsce znające silnik bazy
 zapis/plik_stanu.py         # czytelny podgląd ostatniej rundy (trading_state.txt)
 symulacja/petla.py          # pętla symulatora: rozliczenie → runda → zapis

@@ -5,7 +5,8 @@ Opis każdej funkcji i klasy w projekcie: co robi i jak działa. Zasady projektu
 
 ## Jak to działa w skrócie
 
-Jedna **runda** to przejście grafu LangGraph:
+Przed rundą **screener** wybiera parę, o której dyskutuje ława (najlepszy stosunek
+zmienności do kosztów). Jedna **runda** to przejście grafu LangGraph dla tej pary:
 
 ```
 pobierz_dane → analiza_techniczna → [traderzy równolegle] → glosowanie
@@ -41,6 +42,7 @@ portfel w SQLite i rozlicza transakcje na kolejnych świecach.
 | [main_i_stan.md](main_i_stan.md) | `main.py`, `stan.py` |
 | [konfiguracja.md](konfiguracja.md) | `konfiguracja/ustawienia.py`, `konfiguracja/lawa.py`, `konfiguracja/lawa.json` |
 | [dane.md](dane.md) | `dane/gielda.py` |
+| [screener.md](screener.md) | `screener/wybor.py` — wybór pary przed rundą |
 | [wskazniki.md](wskazniki.md) | `wskazniki/obliczenia.py`, `wskazniki/analiza_techniczna.py`, `wskazniki/statystyki.py` |
 | [lawa.md](lawa.md) | `lawa/*` — traderzy, głosowanie, Head Trader, Risk Manager, reguły SL/TP, LLM |
 | [symulacja.md](symulacja.md) | `symulacja/*` — pętla, ocena transakcji, raport |

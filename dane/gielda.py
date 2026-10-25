@@ -7,7 +7,7 @@ from konfiguracja.ustawienia import LIMIT_SWIEC, SWIECE_W_PROMPCIE
 from stan import AktualnyStan
 
 
-def _tylko_zamkniete_swiece(surowe_swiece: list, interwal: str, teraz_ms: int) -> list:
+def tylko_zamkniete_swiece(surowe_swiece: list, interwal: str, teraz_ms: int) -> list:
     """Odrzuca świecę, która jeszcze trwa — giełda zwraca ją jako ostatnią."""
     dlugosc_ms = ccxt.Exchange.parse_timeframe(interwal) * 1000
     return [swieca for swieca in surowe_swiece if swieca[0] + dlugosc_ms <= teraz_ms]
@@ -27,7 +27,7 @@ def pobierz_swiece_od(symbol: str, interwal: str, od: pd.Timestamp, maks_swiec: 
         if len(paczka) < 1000:
             break
         od_ms = paczka[-1][0] + dlugosc_ms
-    surowe = _tylko_zamkniete_swiece(surowe, interwal, gielda.milliseconds())
+    surowe = tylko_zamkniete_swiece(surowe, interwal, gielda.milliseconds())
     swiece = pd.DataFrame(surowe, columns=["timestamp", "open", "high", "low", "close", "volume"])
     swiece["timestamp"] = pd.to_datetime(swiece["timestamp"], unit="ms", utc=True)
     return swiece.drop_duplicates("timestamp").reset_index(drop=True)
@@ -66,7 +66,7 @@ def pobierz_dane(stan: AktualnyStan):
         # +1, bo ostatnia (niezamknięta) świeca zostanie odrzucona
         surowe_swiece = gielda.fetch_ohlcv(stan["symbol"], stan["interwal"], limit=LIMIT_SWIEC + 1)
         teraz_ms = znacznik_czasu or gielda.milliseconds()
-        surowe_swiece = _tylko_zamkniete_swiece(surowe_swiece, stan["interwal"], teraz_ms)
+        surowe_swiece = tylko_zamkniete_swiece(surowe_swiece, stan["interwal"], teraz_ms)
 
         swiece = pd.DataFrame(surowe_swiece, columns=["timestamp", "open", "high", "low", "close", "volume"])
         swiece["timestamp"] = pd.to_datetime(swiece["timestamp"], unit="ms", utc=True)

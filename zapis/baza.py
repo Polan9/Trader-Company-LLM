@@ -161,10 +161,11 @@ def liczniki_dzienne(polaczenie: sqlite3.Connection, dzien: pd.Timestamp) -> Dic
 
 # --- Rundy ---
 
-def runda_istnieje(polaczenie: sqlite3.Connection, symbol: str, interwal: str, czas_swiecy: pd.Timestamp) -> bool:
+def runda_dla_swiecy_istnieje(polaczenie: sqlite3.Connection, interwal: str, czas_swiecy: pd.Timestamp) -> bool:
+    """Czy dla tej świecy była już runda (dowolna para — screener wybiera jedną parę na świecę)."""
     return polaczenie.execute(
-        "SELECT 1 FROM rundy WHERE symbol = ? AND interwal = ? AND czas_swiecy = ?",
-        (symbol, interwal, _czas(czas_swiecy)),
+        "SELECT 1 FROM rundy WHERE interwal = ? AND czas_swiecy = ?",
+        (interwal, _czas(czas_swiecy)),
     ).fetchone() is not None
 
 
@@ -234,12 +235,6 @@ def zapisz_pozycje(polaczenie: sqlite3.Connection, runda_id: int, symbol: str, i
          decyzja.get("zrodlo_poziomow")),
     )
     return int(kursor.lastrowid)
-
-
-def otwarta_pozycja(polaczenie: sqlite3.Connection, symbol: str) -> Optional[sqlite3.Row]:
-    return polaczenie.execute(
-        "SELECT * FROM pozycje WHERE status = 'otwarta' AND symbol = ? LIMIT 1", (symbol,)
-    ).fetchone()
 
 
 def otwarte(polaczenie: sqlite3.Connection, tabela: str) -> List[sqlite3.Row]:

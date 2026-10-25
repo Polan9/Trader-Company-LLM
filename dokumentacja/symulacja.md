@@ -7,10 +7,12 @@ Uruchomienie: `python -m symulacja` (pętla) / `--raz` (jeden cykl) / `python -m
 Co godzinę (`OPOZNIENIE_PO_ZAMKNIECIU_S` po zamknięciu świecy) jeden **cykl**:
 1. **Rozliczenie** otwartych pozycji i ocen na nowych świecach (SL / TP / czas).
 2. Runda dla tej świecy już w bazie → koniec (bezpieczny restart, brak podwójnych kosztów LLM).
-3. Otwarta pozycja na parze → runda zapisana jako **pominięta**, ława nie jest zwoływana
-   (maks. 1 pozycja na parę).
-4. W przeciwnym razie runda ławy z budżetem i licznikami dziennymi z bazy; zapis rundy,
-   opinii, zużycia LLM, ocen i — przy decyzji TAK — nowej pozycji.
+3. Osiągnięty limit `MAKS_OTWARTYCH_POZYCJI` (domyślnie 1) → runda zapisana jako
+   **pominięta**, ława nie jest zwoływana.
+4. **Screener** wybiera parę (pomijając pary z otwartą pozycją). Brak pary → runda pominięta
+   z symbolem `BRAK`.
+5. Runda ławy dla wybranej pary z budżetem i licznikami dziennymi z bazy; zapis rundy
+   (z rankingiem screenera), opinii, zużycia LLM, ocen i — przy decyzji TAK — nowej pozycji.
 
 **Wejście** w pozycję liczone od świecy **po** decyzji, po cenie `ask` z chwili decyzji.
 **Oceny** to transakcje hipotetyczne: referencja (SL 1×ATR, minimalny TP) w każdej rundzie
@@ -70,14 +72,21 @@ wejścia jednym zapytaniem, ocenia każdy wpis `ocen_transakcje`, liczy `wynik_n
 (dla pozycji też `wynik_usd` = wielkość × wynik %) i zapisuje w jednej transakcji bazy.
 **Zwraca:** listę zamkniętych wpisów.
 
-### `_zapisz_wynik_rundy(polaczenie, wynik, zuzycie, czas_swiecy) -> int`
-Zapisuje w **jednej transakcji**: rundę (ze szczegółami JSON), opinie, zużycie LLM,
-ocenę referencyjną, oceny głosów TAK i — przy decyzji TAK — pozycję. Zwraca id rundy.
+### `BRAK_PARY = "BRAK"`
+Symbol zapisywany w rundzie pominiętej, gdy screener nie wybrał żadnej pary.
+
+### `_skrot_screenera(wynik_screenera, liczba=10) -> dict`
+Do zapisu w bazie: wybrana para, czołówka rankingu i powody odrzuceń (bez zbędnych danych).
+
+### `_zapisz_wynik_rundy(polaczenie, wynik, zuzycie, czas_swiecy, wynik_screenera=None) -> int`
+Zapisuje w **jednej transakcji**: rundę (ze szczegółami JSON, w tym rankingiem screenera),
+opinie, zużycie LLM, ocenę referencyjną, oceny głosów TAK i — przy decyzji TAK — pozycję.
+Zwraca id rundy.
 
 ### `wykonaj_cykl(polaczenie, graf, stan_poczatkowy, teraz=None) -> dict`
 Jeden cykl (opis na górze). Gdy giełda zwróci inną ostatnią świecę niż wynika z zegara
 (opóźnienie publikacji), zapisuje pod czasem z danych i pilnuje duplikatów.
-**Zwraca:** `{"status": "runda" | "pominieta" | "juz_byla", ...}`.
+**Zwraca:** `{"status": "runda" | "pominieta" | "brak_pary" | "juz_byla", ...}`.
 
 ### `uruchom(polaczenie, graf, stan_poczatkowy, raz=False)`
 Pętla główna: cykl z ponawianiem (`PROBY_CYKLU`, przerwa `PRZERWA_PO_BLEDZIE_S`), potem

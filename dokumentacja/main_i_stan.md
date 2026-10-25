@@ -19,8 +19,9 @@
 na dane/opinie/decyzje, liczniki dzienne = 0. Symulator nadpisuje budżet i liczniki wartościami z bazy.
 
 ### Blok `if __name__ == "__main__"`
-Ładuje `.env`, buduje graf, wykonuje **jedną** rundę, wypisuje koszt LLM i zapisuje
-wynik do `trading_state.txt`. Nie używa bazy — do ręcznego sprawdzania.
+Ładuje `.env`; gdy `SCREENER_WLACZONY` — uruchamia screener, wypisuje ranking i ustawia
+wybraną parę (brak pary → koniec bez zwoływania ławy). Potem buduje graf, wykonuje **jedną**
+rundę, wypisuje koszt LLM i zapisuje wynik do `trading_state.txt`. Nie używa bazy — do ręcznego sprawdzania.
 
 ## `stan.py`
 
