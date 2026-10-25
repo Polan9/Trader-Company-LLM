@@ -125,7 +125,7 @@ def opinie_z_ocenami(polaczenie: sqlite3.Connection) -> pd.DataFrame:
     """Każda opinia z wynikiem: TAK → własna transakcja hipotetyczna, NIE → referencja z tej rundy.
     Kolumny dodatkowe: rozstrzygnieta, trafna, wynik_r (TAK: własny, NIE: referencji)."""
     opinie = baza.tabela_jako_df(polaczenie, """
-        SELECT o.runda_id, o.trader_id, o.nazwa, o.glos, o.pewnosc,
+        SELECT o.runda_id, o.trader_id, o.nazwa, o.model, o.glos, o.pewnosc,
                wlasna.status AS status_wlasnej, wlasna.wynik_r AS wynik_r_wlasny,
                ref.status AS status_ref, ref.wynik_r AS wynik_r_ref
         FROM opinie o
@@ -169,12 +169,13 @@ def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
         return opinie
 
     wiersze = []
-    for (trader_id, nazwa), grupa in opinie.groupby(["trader_id", "nazwa"]):
+    for (trader_id, nazwa, model), grupa in opinie.groupby(["trader_id", "nazwa", "model"]):
         ocenione = grupa[grupa["rozstrzygnieta"]]
         ocenione_tak = ocenione[ocenione["glos"] == "TAK"]
         ocenione_nie = ocenione[ocenione["glos"] == "NIE"]
         wiersze.append({
             "trader": nazwa,
+            "model": model,
             "glosy": len(grupa),
             "tak_procent": (grupa["glos"] == "TAK").mean() * 100,
             "rozstrzygniete": len(ocenione),
@@ -184,7 +185,7 @@ def karta_traderow(polaczenie: sqlite3.Connection) -> pd.DataFrame:
             "trafnosc_nie_procent": ocenione_nie["trafna"].mean() * 100 if len(ocenione_nie) else np.nan,
             "srednia_pewnosc": grupa["pewnosc"].mean() if grupa["pewnosc"].notna().any() else np.nan,
         })
-    return pd.DataFrame(wiersze).sort_values("trafnosc_procent", ascending=False)
+    return pd.DataFrame(wiersze).sort_values(["trader", "model"])
 
 
 def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
@@ -264,7 +265,7 @@ def zbuduj_raport(polaczenie: sqlite3.Connection) -> str:
             def p(x, fmt="{:5.1f}%"):
                 return "  —  " if pd.isna(x) else fmt.format(x)
             linie.append(
-                f"  {w.trader:<38} głosy {w.glosy:<4} TAK {w.tak_procent:5.1f}% | rozstrzygnięte {w.rozstrzygniete:<4} "
+                f"  {w.trader:<38} {w.model:<13} głosy {w.glosy:<4} TAK {w.tak_procent:5.1f}% | rozstrzygnięte {w.rozstrzygniete:<4} "
                 f"trafność {p(w.trafnosc_procent)} (TAK {p(w.trafnosc_tak_procent)}, NIE {p(w.trafnosc_nie_procent)}) "
                 f"| śr. R z TAK {p(w.sredni_r_tak, '{:+.3f}')} | śr. pewność {p(w.srednia_pewnosc, '{:4.0f}')}"
             )

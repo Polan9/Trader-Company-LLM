@@ -240,7 +240,7 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
 | Rola | Osobowość / fokus | Głos | Model | Cena |
 |---|---|---|---|---|
 | Trend / momentum trader | pewny siebie, gra z trendem; MACD, średnie, wybicia | tak | `gpt-6-luna` | $0.10 / $0.50 |
-| Scalper / price action | szybki, krótki horyzont; bid/ask, wolumen ostatnich świec | tak | `gpt-5-nano` | $0.05 / $0.40 |
+| Scalper / price action | szybki, krótki horyzont; bid/ask, wolumen ostatnich świec | tak | `gpt-5.6-luna` (do 2026-10-25 `gpt-5-nano`) | $0.20 / $1.20 |
 | Łowca odbić (`lowca_odbic`, dawniej Contrarian) | sceptyk, adwokat diabła; gra na powrót ceny do średniej po przesadzonym ruchu; RSI skrajne | tak | `gpt-4.1-mini` | $0.40 / $1.60 |
 | Analityk newsów i sentymentu | czyta rynek przez wydarzenia; newsy, X, makro | tak | `gpt-5.6-luna` | $0.20 / $1.20 |
 | Statystyk (`statystyk`, dawniej Quant) | chłodny, liczby; zmienność, statystyka, oczekiwany zysk | tak | `gpt-5-mini` | $0.25 / $2.00 |
@@ -256,7 +256,16 @@ różne modele mylą się inaczej. Ceny OpenAI (wejście / wyjście za 1M token�
   `MAKS_PAR_NA_SWIECE = 4` i samych NIE do ok. $0.38 dziennie (~$11.5 miesięcznie).
   Próg opłacalności przy ~$9–11.5 / mies. (R ≈ 0.5% budżetu na zmiennych altach, ~20 transakcji/mies.):
   ok. 720 USD przy skuteczności 45%, 360 USD przy 50%, 240 USD przy 55%; przy ≤ 40% — nigdy.
-  Najdroższe na rundę: gpt-5-mini i gpt-4.1-mini; gpt-5-nano zużywa dużo tokenów rozumowania.
+  Najdroższe na rundę: gpt-5-mini i gpt-4.1-mini; gpt-5-nano zużywał dużo tokenów rozumowania.
+- **Zmiana modelu scalpera (2026-10-25): gpt-5-nano → gpt-5.6-luna.** Powód: błędy w liczbach
+  w uzasadnieniach („SL 1 × ATR” przy faktycznym 0.5 × ATR), szablonowe uzasadnienia, TAK w ~61%
+  głosów, 3/7 trafnych. Prompt i osobowość **bez zmian** (jedna zmiana naraz). Karta traderów
+  liczona osobno per model — porównać po ~30 rozstrzygniętych głosach na nowym modelu.
+  Koszt ~+$0.03/dzień. Test przed przełączeniem: odpowiedź poprawna, $0.0003, mało tokenów rozumowania.
+  Kolejny krok, jeśli nadal TAK na wszystko: korekta osobowości (scalping przy 1h i kosztach 0.2%
+  to sprzeczność — prawdziwy scalping to minuty).
+- Analityk newsów (nieaktywny) ma w konfiguracji ten sam model co scalper — przy jego aktywacji
+  dobrać inny model, żeby zachować różnorodność.
 - Uwaga: modele rozumujące (rodzina gpt-5/gpt-6) liczą tokeny rozumowania jako wyjście
   i mogą nie wspierać `temperature` — używać niskiego `reasoning_effort`, sprawdzić
   obsługiwane parametry przed użyciem. `gpt-4.1-mini` wspiera `temperature=0`.

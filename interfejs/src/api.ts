@@ -134,6 +134,7 @@ export interface StatystykiTransakcji {
 
 export interface WierszKarty {
   trader: string;
+  model: string; // karta liczona osobno dla każdego modelu tradera (porównanie przed/po zmianie)
   glosy: number;
   tak_procent: number;
   rozstrzygniete: number;

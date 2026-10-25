@@ -17,7 +17,7 @@
       "aktywny": true,
       "osobowosc": "Jesteś szybkim, niecierpliwym scalperem. Liczy się dla ciebie tylko to, co dzieje się teraz: ostatnie świece, spread i aktywność. Nie interesują cię długie narracje — szukasz krótkiego, czystego ruchu z ciasnym stop-lossem.",
       "fokus": "ostatnie świece (price action), spread, bid/ask, wolumen ostatnich świec, krótkoterminowa zmienność",
-      "model": "gpt-5-nano",
+      "model": "gpt-5.6-luna",
       "temperatura": null,
       "reasoning_effort": "low",
       "zakres_danych": ["ticker", "swiece_krotkie", "wolumen", "atr"]

@@ -161,8 +161,9 @@ Wspólna podstawa karty traderów i trafności wg pewności.
 **Co robi:** trafność każdego tradera.
 **Jak działa:** głos **TAK trafny**, gdy jego własna transakcja hipotetyczna zarobiła;
 głos **NIE trafny**, gdy transakcja referencyjna z tej rundy straciła. Liczone tylko
-rozstrzygnięte. Kolumny: głosy, % TAK, rozstrzygnięte, trafność (ogółem / TAK / NIE), średni R z TAK,
-średnia deklarowana pewność.
+rozstrzygnięte. **Osobny wiersz dla każdej pary trader + model** — po zmianie modelu tradera widać
+wyniki przed i po (np. scalper na gpt-5-nano i na gpt-5.6-luna). Kolumny: trader, model, głosy, % TAK,
+rozstrzygnięte, trafność (ogółem / TAK / NIE), średni R z TAK, średnia deklarowana pewność.
 
 ### `PRZEDZIALY_PEWNOSCI` i `trafnosc_wg_pewnosci(polaczenie) -> DataFrame`
 **Co robi:** sprawdza, czy deklarowana pewność coś znaczy — trafność rozstrzygniętych głosów TAK

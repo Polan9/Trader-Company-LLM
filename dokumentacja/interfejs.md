@@ -50,7 +50,8 @@ Oś czasu wykresu jest w UTC.
 
 ### `src/zakladki/Statystyki.tsx` — Statistics
 - **`Statystyki`** — kafelki: transakcje ławy, „zawsze wchodź”, heurystyka RSI/MACD, kup i trzymaj
-  (BTC i analizowane pary), maks. spadek; karta traderów (ze średnią pewnością); tabela
+  (BTC i analizowane pary), maks. spadek; karta traderów (osobno dla każdego modelu tradera,
+  ze średnią pewnością); tabela
   **trafność wg deklarowanej pewności** (`WierszPewnosci`); koszt LLM dziennie. Wykresy — etap 3.
 - **`Kafelek`** — liczba transakcji, skuteczność, średni i łączny R, profit factor.
 

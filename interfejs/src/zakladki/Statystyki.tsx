@@ -28,12 +28,12 @@ export default function Statystyki() {
         <h3>Trader scorecard</h3>
         <table>
           <thead>
-            <tr><th>Trader</th><th>Votes</th><th>YES %</th><th>Resolved</th><th>Accuracy</th><th>YES acc.</th><th>NO acc.</th><th>Avg R (YES)</th><th>Avg confidence</th></tr>
+            <tr><th>Trader</th><th>Model</th><th>Votes</th><th>YES %</th><th>Resolved</th><th>Accuracy</th><th>YES acc.</th><th>NO acc.</th><th>Avg R (YES)</th><th>Avg confidence</th></tr>
           </thead>
           <tbody>
             {s.karta_traderow.map((w) => (
-              <tr key={w.trader}>
-                <td>{w.trader}</td><td>{w.glosy}</td><td>{w.tak_procent.toFixed(0)}%</td><td>{w.rozstrzygniete}</td>
+              <tr key={`${w.trader}|${w.model}`}>
+                <td>{w.trader}</td><td className="przygaszony">{w.model}</td><td>{w.glosy}</td><td>{w.tak_procent.toFixed(0)}%</td><td>{w.rozstrzygniete}</td>
                 <td>{w.trafnosc_procent === null ? "—" : `${w.trafnosc_procent.toFixed(0)}%`}</td>
                 <td>{w.trafnosc_tak_procent === null ? "—" : `${w.trafnosc_tak_procent.toFixed(0)}%`}</td>
                 <td>{w.trafnosc_nie_procent === null ? "—" : `${w.trafnosc_nie_procent.toFixed(0)}%`}</td>
