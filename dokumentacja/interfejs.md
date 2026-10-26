@@ -120,8 +120,11 @@ zawsze zwrócona do kamery; **dymek** (`Html` z drei) nad głową; podświetleni
 - Typ **`Krok`**: `screener` → dla każdej pary `para`, `glos` (każdy trader), `wynik`, przy TAK
   `head_trader` i `risk_manager` → `koniec`. Kolejność jak w `symulacja/petla.py`.
 - **`zbudujKroki(iteracja)`** — lista kroków z danych iteracji.
-- **`uzyjOdtwarzania(kroki, krokMs=1400)`** — hook: `graj`, `zatrzymaj`, bieżący `krok` / `indeks`;
-  krok co 1,4 s, po końcu wraca do trybu na żywo.
+- **`CZAS_KROKU_MS`** — czas trwania każdego rodzaju kroku: głos tradera i Head Trader 6 s
+  (w dymku jest uzasadnienie do przeczytania, do 260 znaków), Risk Manager 4,5 s, screener i wynik 3,5 s,
+  ogłoszenie pary i koniec 3 s. Pełna iteracja z 4 parami trwa ok. 2 minuty.
+- **`uzyjOdtwarzania(kroki)`** — hook: `graj`, `zatrzymaj`, bieżący `krok` / `indeks`;
+  każdy krok trwa `CZAS_KROKU_MS[typ]`, po ostatnim wraca do trybu na żywo.
 - **`aktywnyAktor(krok)`** — kto „mówi” (id tradera, `screener`, `head_trader`, `risk_manager`).
 - **`glosyDoTejPory(kroki, indeks)`** — głosy oddane do bieżącego kroku w bieżącej parze.
 

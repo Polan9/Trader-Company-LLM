@@ -67,7 +67,7 @@ export default function Biuro({ lawa, stan, iteracja, kroki, indeks, onWybierz }
               <>
                 <b className={glos.glos === "TAK" ? "plus" : "minus"}>{tak(glos.glos)}</b>
                 {glos.glos === "TAK" && <> · SL {cena(glos.stop_loss)} · TP {cena(glos.take_profit)}</>}
-                {aktor === t.id && <div className="dymek-uzasadnienie">{glos.uzasadnienie.slice(0, 140)}…</div>}
+                {aktor === t.id && <div className="dymek-uzasadnienie">{glos.uzasadnienie.length > 260 ? `${glos.uzasadnienie.slice(0, 260)}…` : glos.uzasadnienie}</div>}
               </>
             );
           }

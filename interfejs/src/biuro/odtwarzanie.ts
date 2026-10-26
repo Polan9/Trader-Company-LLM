@@ -28,19 +28,28 @@ export function zbudujKroki(iteracja: SzczegolyIteracji): Krok[] {
   return kroki;
 }
 
-/** Sterowanie odtwarzaniem: krok co `krokMs`, po ostatnim kroku zatrzymuje się. `indeks = null` — tryb „na żywo”. */
-export function uzyjOdtwarzania(kroki: Krok[], krokMs = 1400) {
+/** Ile trwa każdy rodzaj kroku (ms) — głos tradera najdłużej, bo w dymku jest uzasadnienie do przeczytania. */
+export const CZAS_KROKU_MS: Record<Krok["typ"], number> = {
+  screener: 3500,
+  para: 3000,
+  glos: 6000,
+  wynik: 3500,
+  head_trader: 6000,
+  risk_manager: 4500,
+  koniec: 3000,
+};
+
+/** Sterowanie odtwarzaniem: każdy krok trwa `CZAS_KROKU_MS[typ]`, po ostatnim wraca do trybu „na żywo” (`indeks = null`). */
+export function uzyjOdtwarzania(kroki: Krok[]) {
   const [indeks, ustawIndeks] = useState<number | null>(null);
 
   useEffect(() => {
     if (indeks === null) return;
-    if (indeks >= kroki.length - 1) {
-      const koniec = setTimeout(() => ustawIndeks(null), krokMs * 2);
-      return () => clearTimeout(koniec);
-    }
-    const zegar = setTimeout(() => ustawIndeks(indeks + 1), krokMs);
+    const czas = CZAS_KROKU_MS[kroki[indeks].typ];
+    const nastepny = indeks >= kroki.length - 1 ? null : indeks + 1;
+    const zegar = setTimeout(() => ustawIndeks(nastepny), czas);
     return () => clearTimeout(zegar);
-  }, [indeks, kroki.length, krokMs]);
+  }, [indeks, kroki]);
 
   return {
     krok: indeks === null ? null : kroki[indeks],
