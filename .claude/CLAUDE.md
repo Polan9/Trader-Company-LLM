@@ -64,8 +64,7 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
 - **Dynamiczne iteracje:** zakładka Preview co 15 s sprawdza stan; nowa iteracja odtwarza się sama,
   gdy symulator skończy ją zapisywać (`ostatnia_iteracja_kompletna` w `/api/stan`). Przełącznik
   Auto-replay on/off.
-- Serwer interfejsu uruchamiany jak symulator — `Start-Process` z karty terminala
-  „interfejs (nie zamykać)”; zamknięcie karty zatrzymuje proces.
+- Uruchamianie na Windows (do czasu Pi) — skrypty w `narzedzia/`, patrz „Środowisko”.
 - Wersje pakietów npm przypięte dokładnie w `interfejs/package.json`.
 
 ### Screener (`screener/wybor.py`, opis: `dokumentacja/screener.md`)
@@ -372,5 +371,16 @@ dokumentacja/               # opis każdej funkcji: co robi i jak działa
   może nie być w PATH powłoki Claude — dodać `export PATH="/c/Program Files/nodejs:$PATH"`).
   `interfejs/node_modules` i `interfejs/dist` ignorowane przez git.
 - Symulator i serwer interfejsu to **osobne procesy** — restart jednego nie wpływa na drugi.
+- **Uruchamianie na Windows: tylko przez skrypty** `narzedzia\uruchom_symulator.ps1`
+  (otwiera też okno z logami) i `narzedzia\uruchom_interfejs.ps1`, np.
+  `powershell -NoProfile -ExecutionPolicy Bypass -File .\narzedzia\uruchom_symulator.ps1`.
+  Procesy działają **bez okna konsoli**, wyjście idzie do `dane_lokalne\logi\*.log`.
+  Powód (incydent 2026-10-26 02:00): kliknięcie w okno konsoli włącza tryb zaznaczania
+  (QuickEdit, tytuł okna „Wybierz …”), który **wstrzymuje program przy pierwszym wypisaniu
+  na ekran** — symulator zawisł w połowie rundy bez żadnego błędu. Logi na bieżąco:
+  `narzedzia\pokaz_logi.ps1` — osobne okno tylko do podglądu pliku; jego wstrzymanie
+  nie zatrzymuje symulatora. Procesy uruchomione z karty terminala Claude giną po zamknięciu karty.
+- Restart symulatora tylko między rundami (rundy o pełnej godzinie + ~20 s). Zatrzymany w trakcie
+  rundy — nic nie jest zapisane dla tej świecy, po starcie runda wykona się od nowa.
 - Pakiety tylko do `.venv`: `.venv\Scripts\pip.exe install <pakiet>`
 - `.env` w katalogu głównym, ładowany jawną ścieżką (`KATALOG_PROJEKTU / ".env"`).

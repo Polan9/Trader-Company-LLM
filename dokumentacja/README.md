@@ -35,6 +35,9 @@ portfel w SQLite i rozlicza transakcje na kolejnych świecach.
 | `.venv\Scripts\python.exe -m symulacja.raport` | raport skuteczności z bazy |
 | `.venv\Scripts\python.exe -m analizy.atr_vs_koszty` | analiza ATR vs koszty |
 | `.venv\Scripts\python.exe -m api` | interfejs w przeglądarce: http://127.0.0.1:8000 |
+| `narzedzia\uruchom_symulator.ps1` | **Windows, zalecane:** symulator w tle bez okna konsoli + okno z logami na bieżąco |
+| `narzedzia\uruchom_interfejs.ps1` | **Windows, zalecane:** serwer interfejsu w tle bez okna konsoli |
+| `narzedzia\pokaz_logi.ps1` | okno z logiem symulatora na bieżąco (tylko podgląd) |
 | `npm run build` (w `interfejs/`) | budowanie frontendu po zmianach w `interfejs/src` |
 
 ## Spis modułów
@@ -51,6 +54,7 @@ portfel w SQLite i rozlicza transakcje na kolejnych świecach.
 | [zapis.md](zapis.md) | `zapis/baza.py`, `zapis/plik_stanu.py` |
 | [analizy.md](analizy.md) | `analizy/atr_vs_koszty.py` |
 | [api.md](api.md) | `api/*` — serwer interfejsu (FastAPI), `zapis/odczyt.py` |
+| [narzedzia.md](narzedzia.md) | `narzedzia/*.ps1` — uruchamianie na Windows bez okna konsoli, okno logów |
 | [interfejs.md](interfejs.md) | `interfejs/src/*` — aplikacja w przeglądarce (React, TypeScript, 3D) |
 
 ## Pojęcia
