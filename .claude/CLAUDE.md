@@ -36,6 +36,22 @@ specjalizacjach i rolach, którzy głosują nad otwarciem pozycji.
   edycja ról i zakresu danych z UI, logowanie.
 - Futures / short i ewentualnie akcje.
 
+## Futures / short — odłożone (decyzja 2026-10-26)
+- **Czekamy, aż ława choć raz otworzy pozycję** w obecnym ustawieniu (spot, long). Do tego czasu
+  bez zmian w ławie i regułach głosowania.
+- **Termin: 2026-11-02.** Jeśli do tego dnia ława nie otworzy żadnej pozycji, wracamy do tematu:
+  futures (LONG / SHORT / NIE) albo korekta osobowości traderów, którzy nigdy nie mówią TAK
+  (stan 2026-10-26: Łowca odbić 0/78, nowy scalper 0/56, trend 3/78, statystyk 12/78 — w 78 rundach
+  żadna nie miała 3 z 4 TAK; szacunek oczekiwania przy niezależnych głosach ~3 tygodnie).
+  Do terminu: wdrożenie na Raspberry Pi i testy — bez zmian w ławie.
+- Analiza kontrfaktyczna (78 rund, 2026-10-25/26): luźniejsze reguły by traciły (≥1 TAK: 21 transakcji,
+  −11 R; ≥2 TAK: 2 transakcje, −2 R) — **nie rozluźniać głosowania**. „Zawsze long” −36.5 R (9/59),
+  „zawsze short” na ślepo ≈ 0 R przy kosztach futures (~0.12%), −6.7 R przy kosztach spot.
+  Wniosek: futures dają głównie niższe koszty i możliwość grania analiz spadkowych — zysk zależałby
+  od trafności wyboru shortów, nie od samego kierunku.
+- Plan na później: głos LONG / SHORT / NIE, dźwignia 1x, funding w kosztach, oceny w obu kierunkach,
+  najpierw tylko w symulacji. Przed testnetem sprawdzić dostępność futures Binance dla klienta z PL/UE.
+
 ## Otwarte kwestie (do ustalenia z użytkownikiem)
 - Screener: czy dodać kryteria jakościowe (siła trendu, korelacja z BTC) i czy dopuścić
   kilka otwartych pozycji naraz (`MAKS_OTWARTYCH_POZYCJI` > 1 — crypto są mocno skorelowane).
