@@ -61,6 +61,14 @@ FastAPI (tylko odczyt bazy, `mode=ro`) + React / TypeScript / Vite:
 - **Reports** — raport każdej iteracji z wykresem świec (lightweight-charts), poziomami SL/TP i opiniami,
 - **Statistics** — karta traderów, trafność wg pewności, porównanie ze strategiami odniesienia.
 
+**Reports** — ranking screenera, dane rundy i opinie każdego tradera z uzasadnieniem i pewnością:
+
+![Raport iteracji](dokumentacja/zrzuty/raporty.webp)
+
+**Statistics** — karta traderów (osobno per model), trafność wg deklarowanej pewności, koszt LLM:
+
+![Statystyki](dokumentacja/zrzuty/statystyki.webp)
+
 ## Stos
 
 Python 3.12 · LangGraph · LangChain · OpenAI API · pydantic · pandas · NumPy · ccxt · SQLite (WAL) ·
