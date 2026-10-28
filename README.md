@@ -12,6 +12,8 @@ limity ryzyka, wielkość pozycji) robi deterministyczny kod; modele językowe t
 > ⚠️ Projekt badawczy, działa w trybie **symulacji (paper trading)** — bez realnych środków.
 > To nie jest porada inwestycyjna.
 
+![Biuro 3D — odtwarzanie iteracji: ława przy stole, dymki z głosami, Head Trader i zespół wsparcia](dokumentacja/zrzuty/biuro.webp)
+
 ## Jak to działa
 
 ```mermaid
